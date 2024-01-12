@@ -193,6 +193,11 @@ public class Program {
 				selectedDifficulty[0] = difficulty;
 				window.close();
 			});
+			switch (difficulty){
+				case EASY -> button.setTheme(new SimpleTheme(TextColor.ANSI.GREEN, TextColor.ANSI.WHITE));
+				case MEDIUM -> button.setTheme(new SimpleTheme(new TextColor.RGB(255, 115, 0), TextColor.ANSI.WHITE));
+				case HARD -> button.setTheme(new SimpleTheme(TextColor.ANSI.RED, TextColor.ANSI.WHITE));
+			}
 			button.setPreferredSize(new TerminalSize(27, 1));
 			container.addComponent(button);
 		}
