@@ -1,3 +1,5 @@
+package engine.utils;
+
 import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.SimpleTheme;
@@ -15,9 +17,10 @@ __  __ _                                                  \s
 | |\\/| | | '_ \\ / _ \\/ __\\ \\ /\\ / / _ \\/ _ \\ '_ \\ / _ \\ '__|
 | |  | | | | | |  __/\\__ \\\\ V  V /  __/  __/ |_) |  __/ |  \s
 |_|  |_|_|_| |_|\\___||___/ \\_/\\_/ \\___|\\___| .__/ \\___|_|  \s
-										| |             \s
-										|_|             \s
+										     | |             \s
+										     |_|             \s
             """.split("\n");
     public static final String creatorText = "Game made by *Matteo Ciocci*";
     public static final StyleSet<StyleSet.Set> blinkStyle = (new StyleSet.Set()).setModifiers(EnumSet.of(SGR.BLINK));
+    public static final String apiUrl = "https://minesweeper.cyclic.app/raw";
 }

@@ -1,3 +1,6 @@
+package engine.utils;
+
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.screen.Screen;
 
@@ -55,5 +58,21 @@ public class Utils {
             }
         }
         return new Tuple<>(5, new Tuple<>(8, 8));
+    }
+
+    /**
+     * Hides the cursor at the specified position on the screen.
+     *
+     * <p>The cursor is hidden by placing a white space character at the specified position.
+     * This causes the cursor to invert the color, making it black and effectively hiding it.</p>
+     *
+     * @param cursorX       The x-coordinate of the cursor position.
+     * @param cursorY       The y-coordinate of the cursor position.
+     * @param textGraphics  The TextGraphics object used for rendering on the screen.
+     */
+    public static void hideCursor(int cursorX, int cursorY, TextGraphics textGraphics) {
+        textGraphics.setBackgroundColor(TextColor.ANSI.WHITE_BRIGHT);
+        textGraphics.putString(cursorX, cursorY, " ");
+        textGraphics.setBackgroundColor(TextColor.ANSI.DEFAULT);
     }
 }

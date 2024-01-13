@@ -1,9 +1,13 @@
-import com.googlecode.lanterna.SGR;
+import engine.Leaderboard;
+import engine.Minesweeper;
+import engine.utils.Constants;
+import engine.utils.MinesweeperDifficulty;
+import engine.utils.Tuple;
+import engine.utils.Utils;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.SimpleTheme;
-import com.googlecode.lanterna.graphics.StyleSet;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.gui2.Button;
 import com.googlecode.lanterna.gui2.Label;
@@ -18,8 +22,6 @@ import com.googlecode.lanterna.terminal.Terminal;
 
 import java.awt.*;
 import java.io.IOException;
-import java.util.EnumSet;
-import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -38,11 +40,9 @@ public class Program {
 	private static Terminal terminal;
 	private static Screen screen;
 	private static MultiWindowTextGUI gui;
-	private static BasicWindow mainWindow;
-	private static Panel mainPanel;
+    private static Panel mainPanel;
 	private static TextGraphics textGraphics;
-	private static boolean inGame = false;
-	private static long startTime;
+    private static long startTime;
 	private static ScheduledExecutorService timer;
 	private static ScheduledFuture<?> timerTask;
 
@@ -52,10 +52,9 @@ public class Program {
 		screen = new TerminalScreen(terminal);
 		textGraphics = screen.newTextGraphics();
 		gui = new MultiWindowTextGUI(screen, TextColor.ANSI.BLACK);
-		mainWindow = new BasicWindow();
+        BasicWindow mainWindow = new BasicWindow();
 		mainPanel = new Panel();
 		mainWindow.setComponent(mainPanel);
-		terminal.setCursorVisible(false);
 
 		gui.addWindow(mainWindow);
 
@@ -67,10 +66,26 @@ public class Program {
 		terminal.enterPrivateMode();
 
 		try {
+			Leaderboard l = new Leaderboard(screen, textGraphics);
+			l.displayLeaderboard();
 			showMainScreen();
 		}
 		catch (Exception ex){
-			Utils.Debug("Crash report: "+ ex);
+			stopTimer();
+			// Construct the crash report message with stack trace
+			StringBuilder crashReport = new StringBuilder("Crash Report:\n\n");
+			crashReport.append("An unexpected error occurred.\n");
+			crashReport.append("Error details:\n");
+			crashReport.append(ex);
+			crashReport.append("\n\nStack Trace:\n");
+
+			// Append each line of the stack trace to the crash report
+			for (StackTraceElement element : ex.getStackTrace()) {
+				crashReport.append(element.toString()).append("\n");
+			}
+
+			// Show the crash report in a message box
+			Utils.Debug(crashReport.toString());
 		}
 
 		terminal.exitPrivateMode();
@@ -89,7 +104,6 @@ public class Program {
 				y++;
 			}
 			// Add creator text
-
 			int xOffset = 0;
 
 			for (String segment : Constants.creatorText.split("\\*")) {
@@ -109,7 +123,8 @@ public class Program {
 				textGraphics.clearModifiers();
 				xOffset++;
 			}
-
+			// Hide cursor
+			Utils.hideCursor(0, 0, textGraphics);
 			// Clear any modifiers after the loop
 			textGraphics.clearModifiers();
 			screen.refresh();
@@ -131,8 +146,7 @@ public class Program {
 
 			KeyStroke choice = screen.readInput();
 			if (choice.getKeyType() == KeyType.EOF){
-				running = false;
-				break;
+                break;
 			}
 
 			if (choice.getKeyType() == KeyType.ArrowDown){
@@ -149,9 +163,10 @@ public class Program {
 			} else if (choice.getKeyType() == KeyType.Enter) {
 				switch (menu[selectedIndex]){
 					case "Play":
-						inGame = true;
-						// TODO: Show play menu
-						String username = getUsername();
+                        String username = getUsername();
+						if (username == null){
+							break;
+						}
 						MinesweeperDifficulty difficulty;
 						boolean playAgain;
 						do {
@@ -163,8 +178,7 @@ public class Program {
 							playAgain = play(username, difficulty);
 						}
 						while (playAgain);
-						inGame = false;
-						break;
+                        break;
 					case "About":
 						showAboutMenu();
 						break;
@@ -218,6 +232,16 @@ public class Program {
 		return selectedDifficulty[0];
 	}
 
+	/**
+	 * Displays a menu for the user to input their username.
+	 *
+	 * <p>The method displays a UI to let the user enter their username.
+	 * It returns the entered username as a String. If the user cancels the action or an I/O error occurs during the interaction,
+	 * the method returns {@code null}.</p>
+	 *
+	 * @return The entered username. Returns {@code null} if the user cancels the action or an I/O error occurs.
+	 * @throws IOException If an I/O error occurs while interacting with the user interface.
+	 */
 	private static String getUsername() throws IOException {
 		final String[] username = {""};
 		MenuPopupWindow window = new MenuPopupWindow(mainPanel);
@@ -232,7 +256,10 @@ public class Program {
 					window.close();
 				});
 		enterButton.setTheme(Constants.confirmButtonTheme);
-		Button cancelButton = new Button("Cancel", window::close);
+		Button cancelButton = new Button("Cancel", () -> {
+			username[0] = null;
+			window.close();
+		});
 		cancelButton.setTheme(Constants.cancelButtonTheme);
 		textPanel.addComponent(userBox);
 		buttonsPanel.addComponent(enterButton);
@@ -257,14 +284,16 @@ public class Program {
 		boolean showColon = (elapsedTime % 1000 < 500);
 
 		String title;
+		// String format pattern: "%02d %02d"
+		// - %02d: Represents an integer with a minimum width of 2 digits.
+		// - Space: Adds a space between the two numbers.
 		if (showColon) {
 			title = "Time: " + String.format("%02d:%02d", minutes, remainingSeconds);
 		} else {
 			title = "Time: " + String.format("%02d %02d", minutes, remainingSeconds);
 		}
 
-		textGraphics.putString(0, 2, title);
-
+		textGraphics.putString(0, 3, title);
 		// Refresh the screen to see the changes in real time
 		try {
 			screen.refresh();
@@ -279,11 +308,25 @@ public class Program {
 		timer.shutdown();
 	}
 
+	private static void displaySidebarMessage(TextGraphics textGraphics, int line, String label, String content) {
+		int width = textGraphics.getSize().getColumns();
+		String message = String.format(label, content) + " ".repeat(width - (label.length() + content.length()));
+		textGraphics.putString(0, line, message);
+	}
 
-
-	// Return bool play again
+	/**
+	 * Initiates a Minesweeper game with a specified username and difficulty level.
+	 *
+	 * <p>The method starts a Minesweeper game for the provided username and difficulty level.
+	 * It returns a boolean indicating whether the player wants to play again after completing the session.
+	 * If an I/O error occurs during the gameplay or user interaction, it is thrown as an IOException.</p>
+	 *
+	 * @param username   The username of the player.
+	 * @param difficulty The difficulty level of the Minesweeper game.
+	 * @return {@code true} if the player wants to play again, {@code false} otherwise.
+	 * @throws IOException If an I/O error occurs during gameplay or user interaction.
+	 */
 	private static boolean play(String username, MinesweeperDifficulty difficulty) throws IOException {
-		terminal.setCursorVisible(true);
 		screen.clear();
 		String title = "Minesweeper";
 		textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - title.length() / 2, 0, title);
@@ -309,16 +352,50 @@ public class Program {
 		final boolean[] playAgain = {false};
 
 		while (running) {
-			textGraphics.putString(0, 1, "Score: "+score+("".repeat(terminal.getTerminalSize().getColumns()-("Score: "+score).length())));
+			displaySidebarMessage(textGraphics, 1, "Score: %s", String.valueOf(score));
+			int mines = minesweeper.getRemainingMines();
+			String message = mines < 0 ? "Mines: %s (Too many cells flagged)" : "Mines: %s";
+			displaySidebarMessage(textGraphics, 2, message, String.valueOf(mines));
 			screen.setCursorPosition(new TerminalPosition(cursorX, cursorY));
+			textGraphics.putString(0, terminal.getTerminalSize().getRows()-1, "Press 'F' to flag a mine");
 			field = minesweeper.getFieldAsString().split("\n");
-			int x = screen.getTerminalSize().getColumns()/2-Utils.getMaxStringLength(field)/2;
-			int y = screen.getTerminalSize().getRows()/2-field.length/2;
-			for (String line : field){
-				textGraphics.putString(x, y, line);
-				y++;
+
+			int centerX = screen.getTerminalSize().getColumns() / 2 - Utils.getMaxStringLength(field) / 2;
+			int centerY = screen.getTerminalSize().getRows() / 2 - field.length / 2;
+			int offsetX;
+
+			for (int row = 0; row < minesweeper.getFieldWidth(); row++) {
+				offsetX = 0;
+
+				for (int col = 0; col < minesweeper.getFieldHeight(); col++) {
+					String cellContent;
+
+					if (minesweeper.isUncovered(row, col)) {
+						cellContent = String.valueOf(minesweeper.getCell(row, col));
+					} else {
+						cellContent = "#";
+					}
+
+					// Highlight the cell if needed
+					if (minesweeper.isCellHighlighted(col, row)) {
+						textGraphics.setForegroundColor(new TextColor.RGB(235, 128, 52));
+					}
+
+					// Display the cell content
+					textGraphics.putString(centerX + col + offsetX, centerY + row, cellContent);
+
+					// Reset foreground color to default
+					textGraphics.setForegroundColor(TextColor.ANSI.DEFAULT);
+
+					// Add extra space at the end
+					offsetX += 1;
+				}
 			}
+
+
+
 			screen.refresh();
+
 			KeyStroke choice = screen.readInput();
 
 			switch (choice.getKeyType()) {
@@ -346,11 +423,21 @@ public class Program {
 						trueX++;
 					}
 					break;
+				case Character:
+					if (choice.getCharacter() == 'f'){
+						minesweeper.toggleHighlightCell(trueX, trueY);
+					}
+					break;
 				case Enter:
 					Tuple<Character, Tuple<Integer, Boolean>> minedTile = minesweeper.uncover(trueX, trueY);
 					// Character: the character that got mined
 					// Integer: score
 					// Boolean: player has won (game ended)
+
+					// If the char is null the cell that the user mined is currently locked
+					if (minedTile.first() == null){
+						break;
+					}
 
 					// if the game ended
 					if (minedTile.second().second()) {
@@ -372,12 +459,14 @@ public class Program {
 								});
 
 						Label textBox = new Label(String.format("Congratulations! You've successfully cleared the minefield!\nScore: %d\nPress \"Play Again\" to play again or \"Exit\" to exit", score));
+						playAgainButton.setTheme(Constants.confirmButtonTheme);
+						exitButton.setTheme(Constants.cancelButtonTheme);
 
 						Panel panel = new Panel();
 						Panel buttonsPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
 						exitButton.setPosition(new TerminalPosition(0, 5));
-						buttonsPanel.addComponent(exitButton);
 						buttonsPanel.addComponent(playAgainButton);
+						buttonsPanel.addComponent(exitButton);
 						panel.addComponent(textBox);
 						panel.addComponent(buttonsPanel);
 
@@ -399,12 +488,13 @@ public class Program {
 
                         // Close button
                         Button exitButton = new Button("Exit", window::close);
-
+						exitButton.setTheme(Constants.cancelButtonTheme);
                         Button playAgainButton = new Button("Play Again",
 								() -> {
 									playAgain[0] = true;
 									window.close();
 								});
+						playAgainButton.setTheme(Constants.confirmButtonTheme);
                         Label textBox = new Label(String.format("Oh no! You've uncovered a mine!\nScore: %d\nPress \"Play Again\" to play again or \"Exit\" to exit", score));
                         Panel panel = new Panel();
                         Panel buttonsPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
@@ -442,6 +532,8 @@ public class Program {
 
 	public static void showAboutMenu() throws IOException {
 		screen.clear();
+		// Hide cursor
+		Utils.hideCursor(0, 0, textGraphics);
 
 		// Center the "About" title
 		String title = "About";
@@ -474,161 +566,4 @@ public class Program {
 		}
 		screen.clear();
 	}
-
-
-
-	public static class Minesweeper {
-		private char[][] matrix;
-		private boolean[][] uncovered;
-		private static final Random random = new Random();
-
-		Minesweeper(int width, int height, int mines) {
-			matrix = new char[width][height];
-			uncovered = new boolean[width][height];
-			// Initialize the matrix and uncovered arrays
-			for (int x = 0; x < width; x++) {
-				for (int y = 0; y < height; y++) {
-					matrix[x][y] = ' ';
-					uncovered[x][y] = false;
-				}
-			}
-
-			// Place mines randomly on the matrix
-
-			for (int i = 0; i < mines; i++) {
-				int randomX, randomY;
-
-				do {
-					randomX = random.nextInt(0, width);
-					randomY = random.nextInt(0, height);
-
-				} while (matrix[randomX][randomY] == '*');
-
-				matrix[randomX][randomY] = '*';
-			}
-
-			// Place numbers
-			for (int x = 0; x < width; x++) {
-				for (int y = 0; y < height; y++) {
-					int adjacentMines = getNumbersOfMines(x, y);
-					if (adjacentMines != 0){
-						matrix[x][y] = (char)(adjacentMines + '0');
-					}
-				}
-			}
-		}
-
-
-		public String getFieldAsString() {
-			StringBuilder res = new StringBuilder();
-
-
-			for (int x = 0; x < matrix.length; x++) {
-				for (int y = 0; y < matrix[0].length; y++) {
-					if (uncovered[x][y]) {
-						res.append(matrix[x][y]);
-					} else {
-						res.append("#");
-					}
-					// Add extra space at the end
-					if (matrix[0].length-1 != y){
-						res.append(" ");
-					}
-				}
-				res.append("\n");  // Append newline after each row
-			}
-
-			return res.toString();
-		}
-
-		public Tuple<Character, Tuple<Integer, Boolean>> uncover(int x, int y) {
-			boolean wasUncovered;
-			char cellValue = 'X';
-			int score = 0;
-			boolean gameEnded = true;
-
-			try {
-				wasUncovered = uncovered[y][x];
-				uncovered[y][x] = true;
-				cellValue = matrix[y][x];
-				// If the cell wasn't already uncovered
-				if (!wasUncovered){
-					score++;
-
-					if (cellValue == ' ') {
-						// Check and uncover adjacent cells recursively
-						score += uncoverAdjacent(x - 1, y);
-						score += uncoverAdjacent(x + 1, y);
-						score += uncoverAdjacent(x, y - 1);
-						score += uncoverAdjacent(x, y + 1);
-					}
-				}
-
-				for (x = 0; x < matrix.length; x++) {
-					for (y = 0; y < matrix[0].length; y++) {
-						if (!uncovered[x][y] && matrix[x][y] != '*'){
-							gameEnded = false;
-							break;
-						}
-					}
-					if (!gameEnded){
-						break;
-					}
-				}
-			} catch (ArrayIndexOutOfBoundsException ignore) {
-				// Handle array index out of bounds exception
-			}
-
-			return new Tuple<>(cellValue, new Tuple<>(score, gameEnded));
-		}
-
-		private int uncoverAdjacent(int x, int y) {
-			try {
-				if (!uncovered[y][x] && matrix[y][x] != '*') {
-					return uncover(x, y).second().first();
-				}
-			} catch (ArrayIndexOutOfBoundsException ignore) {}
-			return 0;
-		}
-
-		private boolean isMine(int x, int y){
-			try{
-				return matrix[x][y] == '*';
-			}
-			catch (ArrayIndexOutOfBoundsException ignore){
-
-			}
-			return false;
-		}
-
-		private int getNumbersOfMines(int x, int y){
-			int num = 0;
-			if (isMine(x-1, y)){
-				num++;
-			}
-			if (isMine(x+1, y)){
-				num++;
-			}
-			if (isMine(x, y-1)){
-				num++;
-			}
-			if (isMine(x, y+1)){
-				num++;
-			}
-			if (isMine(x-1, y-1)){
-				num++;
-			}
-			if (isMine(x+1, y-1)){
-				num++;
-			}
-			if (isMine(x-1, y+1)){
-				num++;
-			}
-			if (isMine(x+1, y+1)){
-				num++;
-			}
-			return num;
-		}
-	}
-
 }
