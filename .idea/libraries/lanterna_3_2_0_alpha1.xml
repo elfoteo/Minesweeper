@@ -2,6 +2,7 @@
   <library name="lanterna-3.2.0-alpha1">
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/lanterna-3.2.0-alpha1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/json-java.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

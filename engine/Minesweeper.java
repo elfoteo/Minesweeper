@@ -9,6 +9,7 @@ public class Minesweeper {
     private final boolean[][] uncovered;
     private final boolean[][] highlightedMines;
     private static final Random random = new Random();
+    private int uncoverCount = 0;
 
     public Minesweeper(int width, int height, int mines) {
         matrix = new char[width][height];
@@ -37,8 +38,12 @@ public class Minesweeper {
         }
 
         // Place numbers
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
+        placeNumbers();
+    }
+
+    private void placeNumbers(){
+        for (int x = 0; x < matrix.length; x++) {
+            for (int y = 0; y < matrix[0].length; y++) {
                 int adjacentMines = getNumbersOfMines(x, y);
                 if (adjacentMines != 0 && !isMine(x, y)){
                     matrix[x][y] = (char)(adjacentMines + '0');
@@ -88,6 +93,12 @@ public class Minesweeper {
         boolean gameEnded = true;
 
         try {
+            // The first time the player uncovers a tile must always be a safe tile
+            if (uncoverCount == 0){
+                matrix[y][x] = ' ';
+                placeNumbers();
+            }
+            uncoverCount++;
             wasUncovered = uncovered[y][x];
             uncovered[y][x] = true;
             cellValue = matrix[y][x];

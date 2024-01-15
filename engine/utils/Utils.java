@@ -1,11 +1,12 @@
 package engine.utils;
 
+import com.googlecode.lanterna.SGR;
+import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
-import com.googlecode.lanterna.screen.Screen;
 
 import javax.swing.*;
-import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 public class Utils {
     public static int getMaxStringLength(String[] array) {
@@ -27,16 +28,6 @@ public class Utils {
 
     public static void Debug(String message){
         JOptionPane.showMessageDialog(null, message);
-    }
-
-    public static void WriteDebug(TextGraphics graphics, Screen screen, String string) throws IOException {
-        graphics.putString(0, screen.getTerminalSize().getRows()-1, string);
-        screen.refresh();
-    }
-
-    public static void WriteDebug(TextGraphics graphics, Screen screen, char string) throws IOException {
-        graphics.putString(0, screen.getTerminalSize().getRows()-1, string+"");
-        screen.refresh();
     }
 
     /**
@@ -63,7 +54,7 @@ public class Utils {
     /**
      * Hides the cursor at the specified position on the screen.
      *
-     * <p>The cursor is hidden by placing a white space character at the specified position.
+     * <p>The cursor is hidden by placing a character at the cursor position.
      * This causes the cursor to invert the color, making it black and effectively hiding it.</p>
      *
      * @param cursorX       The x-coordinate of the cursor position.
@@ -71,8 +62,50 @@ public class Utils {
      * @param textGraphics  The TextGraphics object used for rendering on the screen.
      */
     public static void hideCursor(int cursorX, int cursorY, TextGraphics textGraphics) {
-        textGraphics.setBackgroundColor(TextColor.ANSI.WHITE_BRIGHT);
-        textGraphics.putString(cursorX, cursorY, " ");
-        textGraphics.setBackgroundColor(TextColor.ANSI.DEFAULT);
+        textGraphics.setCharacter(
+                cursorX,
+                cursorY,
+                new TextCharacter(textGraphics.getCharacter(cursorX, cursorY).getCharacter(), TextColor.ANSI.BLACK, TextColor.ANSI.WHITE)
+        );
+    }
+
+    public static void drawRect(int x, int y, int width, int height, TextGraphics textGraphics) {
+        // Draw top and bottom borders
+        textGraphics.putString(x, y, "+"+"-".repeat(width-2)+"+");
+        textGraphics.putString(x, y + height - 1, "+"+"-".repeat(width-2)+"+");
+
+        // Draw left and right borders
+        String symbol = "|";
+        for (int i = 1; i < height - 1; i++) {
+            textGraphics.putString(x, y + i, symbol);
+            textGraphics.putString(x + width - 1, y + i, symbol);
+        }
+    }
+
+    public static String toCamelCase(String input){
+        return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
+    }
+
+    public static String getGameTimerText(long seconds, long minutes, long elapsedTime) {
+        long remainingSeconds = seconds - TimeUnit.MINUTES.toSeconds(minutes);
+
+        boolean showColon = (elapsedTime % 1000 < 500);
+
+        String title;
+        // String format pattern: "%02d %02d"
+        // - %02d: Represents an integer with a minimum width of 2 digits.
+        // - Space: Adds a space between the two numbers.
+        if (showColon) {
+            title = "Time: " + String.format("%02d:%02d", minutes, remainingSeconds);
+        } else {
+            title = "Time: " + String.format("%02d %02d", minutes, remainingSeconds);
+        }
+        return title;
+    }
+
+    public static void displaySidebarMessage(TextGraphics textGraphics, int line, String label, String content) {
+        int width = textGraphics.getSize().getColumns();
+        String message = String.format(label, content) + " ".repeat(width - (label.length() + content.length()));
+        textGraphics.putString(0, line, message);
     }
 }
