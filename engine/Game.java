@@ -41,7 +41,7 @@ public class Game {
     private ScheduledExecutorService timer;
     private ScheduledFuture<?> timerTask;
     private long startTime;
-    private UIManager uiManager;
+    private final UIManager uiManager;
 
     public Game(UIManager uiManager) {
         this.uiManager = uiManager;
@@ -70,22 +70,17 @@ public class Game {
         String title = "Minesweeper";
         textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - title.length() / 2, 0, title);
         screen.refresh();
-        Tuple<Integer, Tuple<Integer, Integer>> difficultyInfo = Utils.getDifficultyInfo(difficulty);
-        Minesweeper minesweeper = new Minesweeper(difficultyInfo.second().first(), difficultyInfo.second().second(), difficultyInfo.first());
-        String[] field = minesweeper.getFieldAsString().split("\n");
-        Rectangle bounds = new Rectangle(
-                screen.getTerminalSize().getColumns() / 2 - Utils.getMaxStringLength(field) / 2,
-                screen.getTerminalSize().getRows() / 2 - field.length / 2, field[0].length(), field.length);
+        GameInstance gameInstance = new GameInstance(screen, difficulty);
+
         startTime = System.currentTimeMillis();
         timer = Executors.newSingleThreadScheduledExecutor();
         // Schedule timer update every 500 milliseconds (half second)
         timerTask = timer.scheduleAtFixedRate(this::updateTimer, 0, 500, TimeUnit.MILLISECONDS);
-        GameInstance gameInstance = new GameInstance(screen, field);
-
+        String[] field;
         while (gameInstance.getRunning()) {
             // Display sidebar messages
             Utils.displaySidebarMessage(textGraphics, 1, "Score: %s", String.valueOf(gameInstance.getScore()));
-            int mines = minesweeper.getRemainingMines();
+            int mines = gameInstance.getMinesweeper().getRemainingMines();
             String message = mines < 0 ? "Mines: %s (Too many cells flagged)" : "Mines: %s";
             Utils.displaySidebarMessage(textGraphics, 2, message, String.valueOf(mines));
             // Message to help the user
@@ -93,26 +88,26 @@ public class Game {
             // Change the cursor position to let the user move it around with the 4 arrows
             screen.setCursorPosition(new TerminalPosition(gameInstance.getCursor()[0], gameInstance.getCursor()[1]));
 
-            field = minesweeper.getFieldAsString().split("\n");
+            field = gameInstance.getMinesweeper().getFieldAsString().split("\n");
 
             int centerX = screen.getTerminalSize().getColumns() / 2 - Utils.getMaxStringLength(field) / 2;
             int centerY = screen.getTerminalSize().getRows() / 2 - field.length / 2;
             int offsetX;
 
-            for (int row = 0; row < minesweeper.getFieldWidth(); row++) {
+            for (int row = 0; row < gameInstance.getMinesweeper().getFieldWidth(); row++) {
                 offsetX = 0;
 
-                for (int col = 0; col < minesweeper.getFieldHeight(); col++) {
+                for (int col = 0; col < gameInstance.getMinesweeper().getFieldHeight(); col++) {
                     String cellContent;
 
-                    if (minesweeper.isUncovered(row, col)) {
-                        cellContent = String.valueOf(minesweeper.getCell(row, col));
+                    if (gameInstance.getMinesweeper().isUncovered(row, col)) {
+                        cellContent = String.valueOf(gameInstance.getMinesweeper().getCell(row, col));
                     } else {
                         cellContent = "#";
                     }
 
                     // Highlight the cell if needed
-                    if (minesweeper.isCellHighlighted(col, row)) {
+                    if (gameInstance.getMinesweeper().isCellHighlighted(col, row)) {
                         textGraphics.setForegroundColor(new TextColor.RGB(235, 128, 52));
                     }
 
@@ -133,12 +128,12 @@ public class Game {
 
             switch (choice.getKeyType()) {
                 // Handle arrow movement
-                case ArrowUp -> handleArrowMovement(gameInstance, bounds, -1, 0);
-                case ArrowDown -> handleArrowMovement(gameInstance, bounds, 1, 0);
-                case ArrowLeft -> handleArrowMovement(gameInstance, bounds, 0, -2);
-                case ArrowRight -> handleArrowMovement(gameInstance, bounds, 0, 2);
-                case Character -> handleKeypress(choice, minesweeper, gameInstance);
-                case Enter -> handleEnter(username, difficulty, minesweeper, gameInstance);
+                case ArrowUp -> handleArrowMovement(gameInstance, gameInstance.getGameBounds(), -1, 0);
+                case ArrowDown -> handleArrowMovement(gameInstance, gameInstance.getGameBounds(), 1, 0);
+                case ArrowLeft -> handleArrowMovement(gameInstance, gameInstance.getGameBounds(), 0, -2);
+                case ArrowRight -> handleArrowMovement(gameInstance, gameInstance.getGameBounds(), 0, 2);
+                case Character -> handleKeypress(choice, gameInstance.getMinesweeper(), gameInstance);
+                case Enter -> handleEnter(username, difficulty, gameInstance.getMinesweeper(), gameInstance);
                 case EOF, Escape -> handleEOFOrEscape(choice, gameInstance);
             }
             // If the user wants to play again, then the game has ended

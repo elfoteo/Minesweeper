@@ -263,6 +263,7 @@ public class UIManager {
 
         Button exitButton = new Button("Exit", window::close);
         exitButton.setTheme(Constants.cancelButtonTheme);
+        exitButton.setPreferredSize(new TerminalSize(exitButton.getLabel().length()+2, 1));
 
         Button playAgainButton = new Button("Play Again", () -> {
             gameInstance.setPlayAgain(true);
