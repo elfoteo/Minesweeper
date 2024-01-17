@@ -17,6 +17,7 @@ public class GameInstance{
     private Minesweeper minesweeper;
     private Rectangle gameBounds;
     public GameInstance(Screen screen, MinesweeperDifficulty difficulty) {
+        // Get the information for the difficulty
         Tuple<Integer, Tuple<Integer, Integer>> difficultyInfo = Utils.getDifficultyInfo(difficulty);
         minesweeper = new Minesweeper(difficultyInfo.second().first(), difficultyInfo.second().second(), difficultyInfo.first());
         String[] field = minesweeper.getFieldAsString().split("\n");

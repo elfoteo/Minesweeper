@@ -1,6 +1,5 @@
 package engine.utils;
 
-import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
@@ -9,9 +8,17 @@ import javax.swing.*;
 import java.util.concurrent.TimeUnit;
 
 public class Utils {
+    /**
+     * Returns the maximum string length of the array.
+     *
+     * <p>If the input array is or empty, returns 0.</p>
+     *
+     * @param array An array of strings.
+     * @return The maximum length among the strings in the array, or 0 if the array is {@code null} or empty.
+     */
     public static int getMaxStringLength(String[] array) {
         if (array == null || array.length == 0) {
-            return 0; // or throw an exception, depending on your requirements
+            return 0;
         }
 
         int maxLength = array[0].length();
@@ -26,6 +33,13 @@ public class Utils {
         return maxLength;
     }
 
+    /**
+     * Displays a debug message in a pop-up window.
+     *
+     * <p>This method shows a debug message in a pop-up using a JOptionPane.</p>
+     *
+     * @param message The debugging message to be displayed.
+     */
     public static void Debug(String message){
         JOptionPane.showMessageDialog(null, message);
     }

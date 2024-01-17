@@ -2,7 +2,6 @@ package engine;
 
 import engine.utils.CellType;
 import engine.utils.Tuple;
-import engine.utils.Utils;
 
 import java.util.Random;
 
@@ -86,7 +85,7 @@ public class Minesweeper {
                 if (isUncovered(x, y)) {
                     res.append(matrix[x][y].getChar());
                 } else {
-                    res.append("#");
+                    res.append(CellType.HIDDEN.getChar());
                 }
                 // Add extra space at the end
                 if (matrix[0].length-1 != y){
@@ -349,7 +348,12 @@ public class Minesweeper {
      */
     public char getCell(int x, int y) {
         try {
-            return matrix[x][y].getChar();
+            if (uncovered[x][y]){
+                return matrix[x][y].getChar();
+            }
+            else {
+                return CellType.HIDDEN.getChar();
+            }
         } catch (ArrayIndexOutOfBoundsException ignore) {
             // Return other value, because it will be ignored
             return CellType.NOT_SET.getChar();

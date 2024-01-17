@@ -61,7 +61,7 @@ public class Game {
      *
      * @param username   The username of the player.
      * @param difficulty The difficulty level of the Minesweeper game.
-     * @return {@code true} if the player wants to play again, {@code false} otherwise.
+     * @return true if the player wants to play again, false otherwise.
      * @throws IOException If an I/O error occurs during gameplay or user interaction.
      * @since 2024-01-14
      */
@@ -98,13 +98,8 @@ public class Game {
                 offsetX = 0;
 
                 for (int col = 0; col < gameInstance.getMinesweeper().getFieldHeight(); col++) {
-                    String cellContent;
-
-                    if (gameInstance.getMinesweeper().isUncovered(row, col)) {
-                        cellContent = String.valueOf(gameInstance.getMinesweeper().getCell(row, col));
-                    } else {
-                        cellContent = "#";
-                    }
+                    // TODO: Finish skin implementation
+                    String cellContent = String.valueOf(gameInstance.getMinesweeper().getCell(row, col));
 
                     // Highlight the cell if needed
                     if (gameInstance.getMinesweeper().isCellHighlighted(col, row)) {

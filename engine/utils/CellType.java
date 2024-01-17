@@ -1,11 +1,16 @@
 package engine.utils;
 
+import engine.skins.Skin;
+import engine.skins.impl.DefaultSkin;
+
 public enum CellType {
     NOT_SET,
     EMPTY,
     MINE,
-    NUMBER;
+    NUMBER,
+    HIDDEN;
 
+    private static Skin skin = new DefaultSkin();
     // Additional property for NUMBER cells
     private int number;
 
@@ -32,20 +37,6 @@ public enum CellType {
     }
 
     public char getChar(){
-        switch (this){
-            case NOT_SET -> {
-                return '.';
-            }
-            case EMPTY -> {
-                return ' ';
-            }
-            case NUMBER -> {
-                return this.getNumberAsChar();
-            }
-            case MINE -> {
-                return '*';
-            }
-        }
-        return ' ';
+        return skin.getChar(this);
     }
 }
