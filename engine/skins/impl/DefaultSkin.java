@@ -1,12 +1,13 @@
 package engine.skins.impl;
 
 import engine.skins.Skin;
+import engine.utils.Cell;
 import engine.utils.CellType;
 
 public class DefaultSkin implements Skin {
     @Override
-    public char getChar(CellType cellType) {
-        switch (cellType) {
+    public char getChar(Cell cell) {
+        switch (cell.type) {
             case NOT_SET -> {
                 return '.';
             }
@@ -14,7 +15,7 @@ public class DefaultSkin implements Skin {
                 return ' ';
             }
             case NUMBER -> {
-                return cellType.getNumberAsChar();
+                return cell.getNumberAsChar();
             }
             case MINE -> {
                 return '*';

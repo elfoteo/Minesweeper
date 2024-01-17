@@ -85,11 +85,11 @@ public class Utils {
 
     public static void drawRect(int x, int y, int width, int height, TextGraphics textGraphics) {
         // Draw top and bottom borders
-        textGraphics.putString(x, y, "+"+"-".repeat(width-2)+"+");
-        textGraphics.putString(x, y + height - 1, "+"+"-".repeat(width-2)+"+");
+        textGraphics.putString(x, y, "\u250C"+"\u2500".repeat(width-2)+"\u2510");
+        textGraphics.putString(x, y + height - 1, "\u2514"+"\u2500".repeat(width-2)+"\u2518");
 
         // Draw left and right borders
-        String symbol = "|";
+        String symbol = "\u2502";
         for (int i = 1; i < height - 1; i++) {
             textGraphics.putString(x, y + i, symbol);
             textGraphics.putString(x + width - 1, y + i, symbol);
@@ -121,5 +121,17 @@ public class Utils {
         int width = textGraphics.getSize().getColumns();
         String message = String.format(label, content) + " ".repeat(width - (label.length() + content.length()));
         textGraphics.putString(0, line, message);
+    }
+
+    /**
+     * Normalizes a double value within a specific range.
+     *
+     * @param n   The input value to be normalized.
+     * @param min The minimum value of the range.
+     * @param max The maximum value of the range.
+     * @return The normalized value within the specified range.
+     */
+    public static double normalize(double n, double min, double max) {
+        return Math.max(min, Math.min(max, n));
     }
 }

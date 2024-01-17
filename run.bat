@@ -10,6 +10,7 @@ javac engine/utils/CellType.java
 :: Utilities
 javac -cp .;lanterna-3.1.1.jar engine/utils/Utils.java
 javac -cp .;lanterna-3.1.1.jar engine/utils/Constants.java
+javac -cp .;lanterna-3.1.1.jar engine/utils/Cell.java
 :: Engine
 javac -cp .;lanterna-3.1.1.jar;json-java.jar engine/Leaderboard.java
 javac -cp .;lanterna-3.1.1.jar engine/Minesweeper.java

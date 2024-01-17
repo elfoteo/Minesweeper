@@ -99,11 +99,15 @@ public class Game {
 
                 for (int col = 0; col < gameInstance.getMinesweeper().getFieldHeight(); col++) {
                     // TODO: Finish skin implementation
-                    String cellContent = String.valueOf(gameInstance.getMinesweeper().getCell(row, col));
+                    Cell cell = gameInstance.getMinesweeper().getCell(row, col);
+                    String cellContent = String.valueOf(cell.getChar());
 
                     // Highlight the cell if needed
                     if (gameInstance.getMinesweeper().isCellHighlighted(col, row)) {
                         textGraphics.setForegroundColor(new TextColor.RGB(235, 128, 52));
+                    }
+                    else if (gameInstance.getMinesweeper().isUncovered(row, col) && cell.type == CellType.NUMBER){
+                        textGraphics.setForegroundColor(getWarningColor(cell.getNumber()));
                     }
 
                     // Display the cell content
@@ -116,6 +120,12 @@ public class Game {
                     offsetX += 1;
                 }
             }
+            // Draw rectangle around the game
+            Rectangle bounds = gameInstance.getGameBounds();
+            Utils.drawRect(bounds.x-1, bounds.y-1,
+                    bounds.width+2,
+                    bounds.height+2, textGraphics);
+
 
             screen.refresh();
 
@@ -123,10 +133,10 @@ public class Game {
 
             switch (choice.getKeyType()) {
                 // Handle arrow movement
-                case ArrowUp -> handleArrowMovement(gameInstance, gameInstance.getGameBounds(), -1, 0);
-                case ArrowDown -> handleArrowMovement(gameInstance, gameInstance.getGameBounds(), 1, 0);
-                case ArrowLeft -> handleArrowMovement(gameInstance, gameInstance.getGameBounds(), 0, -2);
-                case ArrowRight -> handleArrowMovement(gameInstance, gameInstance.getGameBounds(), 0, 2);
+                case ArrowUp -> handleArrowMovement(gameInstance, bounds, -1, 0);
+                case ArrowDown -> handleArrowMovement(gameInstance, bounds, 1, 0);
+                case ArrowLeft -> handleArrowMovement(gameInstance, bounds, 0, -2);
+                case ArrowRight -> handleArrowMovement(gameInstance, bounds, 0, 2);
                 case Character -> handleKeypress(choice, gameInstance.getMinesweeper(), gameInstance);
                 case Enter -> handleEnter(username, difficulty, gameInstance.getMinesweeper(), gameInstance);
                 case EOF, Escape -> handleEOFOrEscape(choice, gameInstance);
@@ -145,6 +155,29 @@ public class Game {
         screen.clear();
         return gameInstance.getPlayAgain();
     }
+
+    /**
+     * Generates a warning color for a warning level.
+     * The warning color ranges from green to red, with higher warning levels indicating
+     * a more dangerous state.
+     *
+     * @param warningLevel The warning level (1 to 8) representing the severity.
+     * @return A TextColor representing the warning color.
+     */
+    public static TextColor getWarningColor(int warningLevel) {
+        if (warningLevel > 8){
+            throw new IllegalArgumentException("The cell warning level is higher then 8, range is from 1 to 8");
+        }
+        else if (warningLevel < 1){
+            throw new IllegalArgumentException("The cell warning  level is smaller then 1, range is from 1 to 8");
+        }
+        // *0.8 to desaturate
+        int red = (int) Utils.normalize((warningLevel * 50) * 0.8, 0, 255);
+        int green = (int) Utils.normalize((255 - (warningLevel - 1) * 45) * 0.8, 0, 255);
+
+        return new TextColor.RGB(red, green, 50);
+    }
+
 
     private void handleArrowMovement(GameInstance gameInstance, Rectangle bounds, int deltaY, int deltaX) {
         if (bounds.contains(gameInstance.getCursor()[0] + deltaX, gameInstance.getCursor()[1] + deltaY)) {

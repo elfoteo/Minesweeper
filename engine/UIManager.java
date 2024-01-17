@@ -26,13 +26,13 @@ import java.util.List;
 public class UIManager {
     private final String[] menu = new String[] {"Play", "Leaderboard", "Options", "About","Exit"};
     private int selectedIndex = 0;
-    private Terminal terminal;
-    private Screen screen;
-    private MultiWindowTextGUI gui;
-    private Panel mainPanel;
-    private TextGraphics textGraphics;
+    private final Terminal terminal;
+    private final Screen screen;
+    private final MultiWindowTextGUI gui;
+    private final Panel mainPanel;
+    private final TextGraphics textGraphics;
     public Leaderboard leaderboard;
-    private Game game;
+    private final Game game;
     public UIManager(Terminal terminal) throws IOException {
         this.terminal = terminal;
 
@@ -79,9 +79,10 @@ public class UIManager {
     }
 
     public boolean showDataCollectionWarning() throws IOException {
-        if (!hasUserAcceptedDataCollection()) {
+        if (isDataCollectionRejected()) {
             final boolean[] accepted = {false};
             MenuPopupWindow window = new MenuPopupWindow(mainPanel);
+            window.setTheme(Constants.windowDefaultTheme);
             Panel container = new Panel();
             Panel buttonContainer = new Panel(new LinearLayout(Direction.HORIZONTAL));
             container.addComponent(new Label("Data Collection Warning:"));
@@ -123,7 +124,7 @@ public class UIManager {
         return true;
     }
 
-    private boolean hasUserAcceptedDataCollection() {
+    private boolean isDataCollectionRejected() {
         try {
             Path filePath = Path.of(Constants.dataCollectionAcceptedFile);
             Files.createDirectories(filePath.getParent());
@@ -132,13 +133,13 @@ public class UIManager {
             }
             List<String> lines = Files.readAllLines(filePath);
             if (!lines.isEmpty() && "accepted=true".equals(lines.get(0))) {
-                return true;
+                return false;
             }
         } catch (IOException e) {
             Utils.Debug(e.toString());
             // Handle the exception according to your needs
         }
-        return false;
+        return true;
     }
 
     private void setUserAcceptedDataCollection(boolean accepted) {
@@ -147,12 +148,19 @@ public class UIManager {
             Files.write(Path.of(Constants.dataCollectionAcceptedFile),
                     ("accepted=" + accepted).getBytes(),
                     StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
-        } catch (IOException e) {
-            e.printStackTrace(); // Handle the exception according to your needs
+        } catch (IOException ignore) {
+            // ignore
         }
     }
 
     public void showMainScreen() throws IOException {
+        // If the data collection isn't accepted yet
+        if (isDataCollectionRejected()){
+            // If the user denies the data collection exit
+            if (!showDataCollectionWarning()){
+                return;
+            }
+        }
         boolean running = true;
         while (running){
             // Add logo

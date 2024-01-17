@@ -1,12 +1,13 @@
 package engine;
 
+import engine.utils.Cell;
 import engine.utils.CellType;
 import engine.utils.Tuple;
 
 import java.util.Random;
 
 public class Minesweeper {
-    private final CellType[][] matrix;
+    private final Cell[][] matrix;
     private final boolean[][] uncovered;
     private final boolean[][] highlightedMines;
     private static final Random random = new Random();
@@ -14,13 +15,13 @@ public class Minesweeper {
     private final int mines;
 
     public Minesweeper(int width, int height, int mines) {
-        matrix = new CellType[width][height];
+        matrix = new Cell[width][height];
         uncovered = new boolean[width][height];
         highlightedMines = new boolean[width][height];
         // Initialize the matrix and uncovered arrays
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                matrix[x][y] = CellType.EMPTY;
+                matrix[x][y] = new Cell(CellType.EMPTY);
                 uncovered[x][y] = false;
             }
         }
@@ -39,9 +40,9 @@ public class Minesweeper {
                 randomX = random.nextInt(0, this.getFieldWidth());
                 randomY = random.nextInt(0, this.getFieldHeight());
 
-            } while (matrix[randomX][randomY] == CellType.MINE);
+            } while (matrix[randomX][randomY].type == CellType.MINE);
 
-            matrix[randomX][randomY] = CellType.MINE;
+            matrix[randomX][randomY] = new Cell(CellType.MINE);
         }
     }
 
@@ -53,8 +54,8 @@ public class Minesweeper {
             for (int y = 0; y < matrix[0].length; y++) {
                 int adjacentMines = getNumbersOfMines(x, y);
                 if (adjacentMines != 0 && !isMine(x, y)){
-                    matrix[x][y] = CellType.NUMBER;
-                    matrix[x][y].setNumber(adjacentMines);
+                    matrix[x][y] = new Cell(CellType.NUMBER);
+                    matrix[x][y].setAdjacentMines(adjacentMines);
                 }
             }
         }
@@ -85,7 +86,7 @@ public class Minesweeper {
                 if (isUncovered(x, y)) {
                     res.append(matrix[x][y].getChar());
                 } else {
-                    res.append(CellType.HIDDEN.getChar());
+                    res.append(Cell.getCharFor(CellType.HIDDEN));
                 }
                 // Add extra space at the end
                 if (matrix[0].length-1 != y){
@@ -130,14 +131,14 @@ public class Minesweeper {
                 // Place mines randomly on the matrix
                 placeMines();
                 // Force the mined cell to be safe
-                matrix[y][x] = CellType.EMPTY;
+                matrix[y][x] = new Cell(CellType.EMPTY);
                 // Place numbers
                 placeNumbers();
             }
             uncoverCount++;
             wasUncovered = uncovered[y][x];
             uncovered[y][x] = true;
-            cellValue = matrix[y][x];
+            cellValue = matrix[y][x].type;
             // If the cell wasn't already uncovered
             if (!wasUncovered){
                 score++;
@@ -153,7 +154,7 @@ public class Minesweeper {
 
             for (x = 0; x < matrix.length; x++) {
                 for (y = 0; y < matrix[0].length; y++) {
-                    if (!isUncovered(x, y) && matrix[x][y] != CellType.MINE){
+                    if (!isUncovered(x, y) && matrix[x][y].type != CellType.MINE){
                         gameEnded = false;
                         break;
                     }
@@ -166,7 +167,7 @@ public class Minesweeper {
             // Ignore if the coordinates are out of bounds
         }
 
-        return new Tuple<>(cellValue.getChar(), new Tuple<>(score, gameEnded));
+        return new Tuple<>(Cell.getCharFor(cellValue), new Tuple<>(score, gameEnded));
     }
 
     /**
@@ -183,7 +184,7 @@ public class Minesweeper {
      */
     private int uncoverAdjacent(int x, int y) {
         try {
-            if (!uncovered[y][x] && matrix[y][x] != CellType.MINE) {
+            if (!uncovered[y][x] && matrix[y][x].type != CellType.MINE) {
                 return uncover(x, y).second().first();
             }
         } catch (ArrayIndexOutOfBoundsException ignore) {}
@@ -202,7 +203,7 @@ public class Minesweeper {
      */
     private boolean isMine(int x, int y) {
         try {
-            return matrix[x][y] == CellType.MINE;
+            return matrix[x][y].type == CellType.MINE;
         } catch (ArrayIndexOutOfBoundsException ignore) {
             // Ignore if the coordinates are out of bounds
         }
@@ -346,17 +347,17 @@ public class Minesweeper {
      * @return The character representation of the cell at the specified coordinates or the NOT_SET character from the CellType enum
      *         if the coordinates are out of bounds.
      */
-    public char getCell(int x, int y) {
+    public Cell getCell(int x, int y) {
         try {
             if (uncovered[x][y]){
-                return matrix[x][y].getChar();
+                return matrix[x][y];
             }
             else {
-                return CellType.HIDDEN.getChar();
+                return new Cell(CellType.HIDDEN);
             }
         } catch (ArrayIndexOutOfBoundsException ignore) {
             // Return other value, because it will be ignored
-            return CellType.NOT_SET.getChar();
+            return new Cell(CellType.NOT_SET);
         }
     }
 
@@ -372,9 +373,9 @@ public class Minesweeper {
         int mines = 0;
 
         // Count mines in the matrix
-        for (CellType[] line : matrix) {
-            for (CellType character : line) {
-                if (character == CellType.MINE) {
+        for (Cell[] line : matrix) {
+            for (Cell cell : line) {
+                if (cell.type == CellType.MINE) {
                     mines++;
                 }
             }
