@@ -238,6 +238,33 @@ public class Minesweeper {
     }
 
     /**
+     * Gets the number of mines in neighboring cells around the specified coordinates.
+     *
+     * <p>This method calculates and returns the number of mines in the neighboring cells
+     * around the specified coordinates in the Minesweeper game. If the coordinates are
+     * out of bounds, the method returns 0.
+     * Checks in all the 8 directions.</p>
+     *
+     * @param x The x-coordinate of the cell for which the number of neighboring mines is calculated.
+     * @param y The y-coordinate of the cell for which the number of neighboring mines is calculated.
+     * @return The number of mines in neighboring cells.
+     */
+    public int getNumbersOfFlaggedCells(int x, int y) {
+        int num = 0;
+
+        // loop the 8 adjacent cells
+        for (int i = x - 1; i <= x + 1; i++) {
+            for (int j = y - 1; j <= y + 1; j++) {
+                if ((i != x || j != y) && isCellHighlighted(j, i)) {
+                    num++;
+                }
+            }
+        }
+
+        return num;
+    }
+
+    /**
      * Checks if the cell at the specified coordinates is highlighted.
      *
      * <p>This method checks whether the cell at the specified coordinates in the Minesweeper game
@@ -334,6 +361,8 @@ public class Minesweeper {
             return true;
         }
     }
+
+
 
 
     /**

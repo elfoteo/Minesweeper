@@ -71,7 +71,7 @@ public class Game {
         textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - title.length() / 2, 0, title);
         screen.refresh();
         GameInstance gameInstance = new GameInstance(screen, difficulty);
-
+        Minesweeper minesweeper = gameInstance.getMinesweeper();
         startTime = System.currentTimeMillis();
         timer = Executors.newSingleThreadScheduledExecutor();
         // Schedule timer update every 500 milliseconds (half second)
@@ -80,7 +80,7 @@ public class Game {
         while (gameInstance.getRunning()) {
             // Display sidebar messages
             Utils.displaySidebarMessage(textGraphics, 1, "Score: %s", String.valueOf(gameInstance.getScore()));
-            int mines = gameInstance.getMinesweeper().getRemainingMines();
+            int mines = minesweeper.getRemainingMines();
             String message = mines < 0 ? "Mines: %s (Too many cells flagged)" : "Mines: %s";
             Utils.displaySidebarMessage(textGraphics, 2, message, String.valueOf(mines));
             // Message to help the user
@@ -88,26 +88,33 @@ public class Game {
             // Change the cursor position to let the user move it around with the 4 arrows
             screen.setCursorPosition(new TerminalPosition(gameInstance.getCursor()[0], gameInstance.getCursor()[1]));
 
-            field = gameInstance.getMinesweeper().getFieldAsString().split("\n");
+            field = minesweeper.getFieldAsString().split("\n");
 
             int centerX = screen.getTerminalSize().getColumns() / 2 - Utils.getMaxStringLength(field) / 2;
             int centerY = screen.getTerminalSize().getRows() / 2 - field.length / 2;
             int offsetX;
 
-            for (int row = 0; row < gameInstance.getMinesweeper().getFieldWidth(); row++) {
+            for (int row = 0; row < minesweeper.getFieldWidth(); row++) {
                 offsetX = 0;
 
-                for (int col = 0; col < gameInstance.getMinesweeper().getFieldHeight(); col++) {
+                for (int col = 0; col < minesweeper.getFieldHeight(); col++) {
                     // TODO: Finish skin implementation
-                    Cell cell = gameInstance.getMinesweeper().getCell(row, col);
+                    Cell cell = minesweeper.getCell(row, col);
                     String cellContent = String.valueOf(cell.getChar());
 
-                    // Highlight the cell if needed
-                    if (gameInstance.getMinesweeper().isCellHighlighted(col, row)) {
-                        textGraphics.setForegroundColor(new TextColor.RGB(235, 128, 52));
-                    }
-                    else if (gameInstance.getMinesweeper().isUncovered(row, col) && cell.type == CellType.NUMBER){
-                        textGraphics.setForegroundColor(getWarningColor(cell.getNumber()));
+                    if (minesweeper.isCellHighlighted(col, row)) {
+                        // Highlight the cell if needed
+                        textGraphics.setForegroundColor(Constants.cellHighlightColor);
+                    } else if (minesweeper.isUncovered(row, col) && cell.type == CellType.NUMBER) {
+                        // Color cell numbers
+                        int number = cell.getNumber();
+
+                        // Set color based on conditions
+                        if (number == minesweeper.getNumbersOfFlaggedCells(row, col)) {
+                            textGraphics.setForegroundColor(getWarningColor(number, 0.2));
+                        } else {
+                            textGraphics.setForegroundColor(getWarningColor(number));
+                        }
                     }
 
                     // Display the cell content
@@ -137,8 +144,8 @@ public class Game {
                 case ArrowDown -> handleArrowMovement(gameInstance, bounds, 1, 0);
                 case ArrowLeft -> handleArrowMovement(gameInstance, bounds, 0, -2);
                 case ArrowRight -> handleArrowMovement(gameInstance, bounds, 0, 2);
-                case Character -> handleKeypress(choice, gameInstance.getMinesweeper(), gameInstance);
-                case Enter -> handleEnter(username, difficulty, gameInstance.getMinesweeper(), gameInstance);
+                case Character -> handleKeypress(choice, minesweeper, gameInstance);
+                case Enter -> handleEnter(username, difficulty, minesweeper, gameInstance);
                 case EOF, Escape -> handleEOFOrEscape(choice, gameInstance);
             }
             // If the user wants to play again, then the game has ended
@@ -176,6 +183,20 @@ public class Game {
         int green = (int) Utils.normalize((255 - (warningLevel - 1) * 45) * 0.8, 0, 255);
 
         return new TextColor.RGB(red, green, 50);
+    }
+
+    public static TextColor getWarningColor(int warningLevel, double saturation) {
+        if (warningLevel > 8){
+            throw new IllegalArgumentException("The cell warning level is higher then 8, range is from 1 to 8");
+        }
+        else if (warningLevel < 1){
+            throw new IllegalArgumentException("The cell warning  level is smaller then 1, range is from 1 to 8");
+        }
+        // *saturation to saturate or desaturate
+        int red = (int) Utils.normalize((warningLevel * 50) * saturation, 0, 255);
+        int green = (int) Utils.normalize((255 - (warningLevel - 1) * 45) * saturation, 0, 255);
+
+        return new TextColor.RGB(red, green, (int) (50 * saturation));
     }
 
 

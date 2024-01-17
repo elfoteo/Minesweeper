@@ -12,6 +12,7 @@ public class Constants {
     public static final SimpleTheme cancelButtonTheme = new SimpleTheme(TextColor.ANSI.RED, TextColor.ANSI.DEFAULT, SGR.BOLD);
     public static final SimpleTheme confirmButtonTheme = new SimpleTheme(TextColor.ANSI.GREEN, TextColor.ANSI.DEFAULT, SGR.BOLD);
     public static final SimpleTheme windowDefaultTheme = new SimpleTheme(TextColor.ANSI.WHITE, TextColor.ANSI.DEFAULT);
+    public static final TextColor cellHighlightColor = new TextColor.RGB(235, 128, 52);
     public static final String[] logo = """
  __  __ _                                                  \s
 |  \\/  (_)                                                 \s
