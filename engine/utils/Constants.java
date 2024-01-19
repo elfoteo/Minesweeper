@@ -9,9 +9,6 @@ import com.googlecode.lanterna.graphics.Theme;
 import java.util.EnumSet;
 
 public class Constants {
-    public static final SimpleTheme cancelButtonTheme = new SimpleTheme(TextColor.ANSI.RED, TextColor.ANSI.DEFAULT, SGR.BOLD);
-    public static final SimpleTheme confirmButtonTheme = new SimpleTheme(TextColor.ANSI.GREEN, TextColor.ANSI.DEFAULT, SGR.BOLD);
-    public static final SimpleTheme windowDefaultTheme = new SimpleTheme(TextColor.ANSI.WHITE, TextColor.ANSI.DEFAULT);
     public static final TextColor cellHighlightColor = new TextColor.RGB(235, 128, 52);
     public static final String[] logo = """
  __  __ _                                                  \s
@@ -41,4 +38,7 @@ public class Constants {
             "Your privacy is important for us, and your data will be handled securely.";
     public static final String dataCollectionAcceptedFile = "data/data_collection.txt";
     public static final String usernameFile = "data/username.txt";
+    public static final String skinFile = "data/skin.dat";
+    public static final String optionsFile = "data/options.json";
+    public static String themeFile = "data/theme.dat";
 }

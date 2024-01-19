@@ -1,11 +1,9 @@
 package engine.utils;
 
-import engine.skins.Skin;
-import engine.skins.impl.DefaultSkin;
+import engine.UIManager;
 
 public class Cell {
     public CellType type;
-    private static Skin skin = new DefaultSkin();
     // Additional property for NUMBER cells
     private int number;
 
@@ -36,7 +34,7 @@ public class Cell {
     }
 
     public char getChar(){
-        return skin.getChar(this);
+        return UIManager.selectedSkin.getChar(this);
     }
 
     public static char getCharFor(CellType type){

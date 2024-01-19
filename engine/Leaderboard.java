@@ -1,6 +1,5 @@
 package engine;
 
-import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
@@ -8,16 +7,18 @@ import com.googlecode.lanterna.screen.Screen;
 import engine.utils.Constants;
 import engine.utils.MinesweeperDifficulty;
 import engine.utils.Utils;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-
-import org.json.*;
 
 public class Leaderboard {
     private final TextGraphics textGraphics;

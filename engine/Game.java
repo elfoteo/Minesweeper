@@ -98,7 +98,6 @@ public class Game {
                 offsetX = 0;
 
                 for (int col = 0; col < minesweeper.getFieldHeight(); col++) {
-                    // TODO: Finish skin implementation
                     Cell cell = minesweeper.getCell(row, col);
                     String cellContent = String.valueOf(cell.getChar());
 
@@ -110,7 +109,8 @@ public class Game {
                         int number = cell.getNumber();
 
                         // Set color based on conditions
-                        if (number == minesweeper.getNumbersOfFlaggedCells(row, col)) {
+                        if (number == minesweeper.getNumbersOfFlaggedCells(row, col) && uiManager.getOptions().isGrayOutNearbyCells()) {
+                            // Give a hint only if the options allow it
                             textGraphics.setForegroundColor(getWarningColor(number, 0.2));
                         } else {
                             textGraphics.setForegroundColor(getWarningColor(number));
@@ -292,7 +292,7 @@ public class Game {
             String warningMessage = "Do you really want to exit?";
 
             MenuPopupWindow popupWindow = new MenuPopupWindow(mainPanel);
-            popupWindow.setTheme(Constants.windowDefaultTheme);
+            popupWindow.setTheme(uiManager.getWindowTheme());
             Panel popupContainer = new Panel();
             Panel buttonContainer = new Panel(new LinearLayout(Direction.HORIZONTAL));
             popupContainer.addComponent(new Label(warningMessage));
@@ -302,14 +302,14 @@ public class Game {
                 popupWindow.close();
             });
             cancelButton.setPreferredSize(new TerminalSize(4, 1));
-            cancelButton.setTheme(Constants.confirmButtonTheme);
+            cancelButton.setTheme(uiManager.getConfirmButtonTheme());
             buttonContainer.addComponent(cancelButton);
             Button exitButton = new Button("Yes", () -> {
                 gameInstance.setRunning(false);
                 popupWindow.close();
             });
             exitButton.setPreferredSize(new TerminalSize(5, 1));
-            exitButton.setTheme(Constants.cancelButtonTheme);
+            exitButton.setTheme(uiManager.getCancelButtonTheme());
             buttonContainer.addComponent(exitButton);
             popupContainer.addComponent(buttonContainer);
             try {

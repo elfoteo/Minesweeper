@@ -3,11 +3,10 @@ package engine.skins.impl;
 import engine.skins.Skin;
 import engine.skins.SkinManager;
 import engine.utils.Cell;
-import engine.utils.CellType;
 
 import java.io.Serializable;
 
-public class DefaultSkin implements Skin, Serializable {
+public class MoneySkin implements Skin, Serializable {
     @Override
     public char getChar(Cell cell) {
         switch (cell.type) {
@@ -24,7 +23,7 @@ public class DefaultSkin implements Skin, Serializable {
                 return '*';
             }
             case HIDDEN -> {
-                return '#';
+                return '$';
             }
         }
         return ' ';
@@ -32,6 +31,6 @@ public class DefaultSkin implements Skin, Serializable {
 
     @Override
     public String getSkinName() {
-        return "Default";
+        return "Money";
     }
 }

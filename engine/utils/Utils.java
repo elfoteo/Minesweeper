@@ -5,6 +5,7 @@ import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.concurrent.TimeUnit;
 
 public class Utils {
@@ -42,6 +43,20 @@ public class Utils {
      */
     public static void Debug(String message){
         JOptionPane.showMessageDialog(null, message);
+    }
+    public static String exceptionToString(Exception ex){
+        // Construct the crash report message with stack trace
+        StringBuilder crashReport = new StringBuilder("Crash Report:\n\n");
+        crashReport.append("An unexpected error occurred.\n");
+        crashReport.append("Error details:\n");
+        crashReport.append(ex);
+        crashReport.append("\n\nStack Trace:\n");
+
+        // Append each line of the stack trace to the crash report
+        for (StackTraceElement element : ex.getStackTrace()) {
+            crashReport.append(element.toString()).append("\n");
+        }
+        return crashReport.toString();
     }
 
     /**
@@ -81,6 +96,14 @@ public class Utils {
                 cursorY,
                 new TextCharacter(textGraphics.getCharacter(cursorX, cursorY).getCharacter(), TextColor.ANSI.BLACK, TextColor.ANSI.WHITE)
         );
+    }
+
+    public static TextColor ColorToTextColor(Color color){
+        return new TextColor.RGB(color.getRed(), color.getGreen(), color.getBlue());
+    }
+
+    public static Color TextColorToAwtColor(TextColor textColor){
+        return new Color(textColor.getRed(), textColor.getGreen(), textColor.getBlue());
     }
 
     public static void drawRect(int x, int y, int width, int height, TextGraphics textGraphics) {
