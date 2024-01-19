@@ -37,7 +37,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class UIManager {
-    private final String[] menu = new String[] {"Play", "Leaderboard", "Skins", "Themes", "Options", "About", "Exit"};
+    private final String[] menuOptions = new String[] {"Play", "Leaderboard", "Settings", "About", "Exit"};
     public static ISkin selectedSkin = new DefaultSkin();
     public static IGameTheme selectedTheme = new DefaultGameTheme();
     private int selectedIndex = 0;
@@ -215,9 +215,9 @@ public class UIManager {
         while (running){
             applyThemeColors(textGraphics);
             // Add logo
-            int x = Utils.getMaxStringLength(Constants.logo);
+            int x = Utils.getMaxStringLength(Constants.minesweeperLogo);
             int y = 1;
-            for (String logoLine : Constants.logo){
+            for (String logoLine : Constants.minesweeperLogo){
                 textGraphics.putString(screen.getTerminalSize().getColumns()/2-x/2, y, logoLine);
                 y++;
             }
@@ -251,10 +251,10 @@ public class UIManager {
             screen.refresh();
             applyThemeColors(textGraphics);
 
-            x = Utils.getMaxStringLength(menu)+2;
-            y = Constants.logo.length+2;
+            x = Utils.getMaxStringLength(menuOptions)+2;
+            y = Constants.minesweeperLogo.length+2;
             int counter = 0;
-            for (String menuLine : menu){
+            for (String menuLine : menuOptions){
                 if (selectedIndex == counter){
                     textGraphics.putString(screen.getTerminalSize().getColumns()/2-x/2, y, "o "+menuLine);
                 }
@@ -273,17 +273,17 @@ public class UIManager {
 
             if (choice.getKeyType() == KeyType.ArrowDown){
                 selectedIndex++;
-                if (selectedIndex > menu.length-1){
+                if (selectedIndex > menuOptions.length-1){
                     selectedIndex = 0;
                 }
             }
             else if (choice.getKeyType() == KeyType.ArrowUp){
                 selectedIndex--;
                 if (selectedIndex < 0){
-                    selectedIndex = menu.length-1;
+                    selectedIndex = menuOptions.length-1;
                 }
             } else if (choice.getKeyType() == KeyType.Enter) {
-                switch (menu[selectedIndex]){
+                switch (menuOptions[selectedIndex]){
                     case "Play":
                         String username = getUsername();
                         if (username == null){
@@ -304,24 +304,8 @@ public class UIManager {
                     case "Leaderboard":
                         leaderboard.displayLeaderboard();
                         break;
-                    case "Skins":
-                        showSkinsMenu();
-                        break;
-                    case "Themes":
-                        ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
-                        // Schedule timer update every 500 milliseconds (half second)
-                        ScheduledFuture<?> timerTask = timer.scheduleAtFixedRate(this::updateTheme, 0, 100, TimeUnit.MILLISECONDS);
-                        try {
-                            showThemesMenu();
-                        }catch (Exception ignore){
-
-                        }
-                        timerTask.cancel(true);
-                        timer.shutdown();
-                        break;
-                    case "Options":
-                        // TODO: Music options
-                        showOptions();
+                    case "Settings":
+                        showSettings();
                         break;
                     case "About":
                         showAboutMenu();
@@ -334,6 +318,89 @@ public class UIManager {
         }
         // App ends, save options
         Options.saveOptionsToFile(options);
+    }
+
+    private void showSettings() throws IOException {
+        int localIndex = 0;
+        String[] localOptions = new String[] {"Skins", "Themes", "Options"};
+        screen.clear();
+        boolean running = true;
+        while (running) {
+            applyThemeColors(textGraphics);
+            // Add logo
+            int x = Utils.getMaxStringLength(Constants.settingsLogo);
+            int y = 1;
+            for (String logoLine : Constants.settingsLogo) {
+                textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - x / 2, y, logoLine);
+                y++;
+            }
+
+            // Hide cursor
+            Utils.hideCursor(0, 0, textGraphics);
+            // Clear any modifiers after the loop
+            textGraphics.clearModifiers();
+            screen.refresh();
+            applyThemeColors(textGraphics);
+
+            x = Utils.getMaxStringLength(localOptions) + 2;
+            y = Constants.minesweeperLogo.length + 2;
+            int counter = 0;
+            for (String menuLine : localOptions) {
+                if (localIndex == counter) {
+                    textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - x / 2, y, "o " + menuLine);
+                } else {
+                    textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - x / 2, y, "- " + menuLine);
+                }
+                y++;
+                counter++;
+            }
+            screen.refresh();
+
+            KeyStroke choice = screen.readInput();
+            if (choice.getKeyType() == KeyType.EOF) {
+                break;
+            }
+
+            if (choice.getKeyType() == KeyType.ArrowDown) {
+                localIndex++;
+                if (localIndex > localOptions.length - 1) {
+                    localIndex = 0;
+                }
+            } else if (choice.getKeyType() == KeyType.ArrowUp) {
+                localIndex--;
+                if (localIndex < 0) {
+                    localIndex = localOptions.length - 1;
+                }
+            } else if (choice.getKeyType() == KeyType.Enter) {
+                switch (localOptions[localIndex]) {
+                    case "Skins":
+                        showSkinsMenu();
+                        break;
+                    case "Themes":
+                        ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
+                        // Schedule a timer task to update the theme every 100 milliseconds
+                        ScheduledFuture<?> timerTask = timer.scheduleAtFixedRate(this::updateTheme, 0, 100, TimeUnit.MILLISECONDS);
+                        try {
+                            showThemesMenu();
+                        } catch (Exception ex) {
+                            // If an exception occurs during menu display, stop the timer task and shutdown the timer
+                            timerTask.cancel(true);
+                            timer.shutdown();
+                            // Propagate the exception up the stack
+                            throw ex;
+                        }
+                        // If all is fine, cancel the timer
+                        timerTask.cancel(true);
+                        timer.shutdown();
+                        break;
+                    case "Options":
+                        // TODO: Music options
+                        showOptions();
+                        break;
+                }
+            }
+        }
+        screen.clear();
     }
 
     private void updateTheme() {

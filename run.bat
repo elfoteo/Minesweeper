@@ -2,37 +2,49 @@
 prompt $g$g$s
 taskkill /F /IM javaw.exe > nul
 @echo on
-::Basic records
-javac engine/utils/Tuple.java
+
+:: Create a directory for compiled classes if it doesn't exist
+mkdir out
+
+:: Basic records
+javac -d out engine/utils/Tuple.java
+
 :: Enums
-javac engine/utils/MinesweeperDifficulty.java
-javac engine/utils/CellType.java
+javac -d out engine/utils/MinesweeperDifficulty.java
+javac -d out engine/utils/CellType.java
+
 :: Utilities
-javac -cp .;lanterna-3.1.1.jar engine/utils/Utils.java
-javac -cp .;lanterna-3.1.1.jar engine/utils/Constants.java
-javac -cp .;lanterna-3.1.1.jar;json-java.jar engine/utils/Cell.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/utils/Utils.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/utils/Constants.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/utils/Cell.java
+
 :: Options
-javac engine/options/OptionsInstance.java
-javac -cp .;json-java.jar engine/options/Options.java
+javac -d out engine/options/OptionsInstance.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/options/Options.java
+
 :: Skins
-javac -cp .;lanterna-3.1.1.jar engine/skins/SkinManager.java
-javac -cp .;lanterna-3.1.1.jar engine/skins/ISkin.java
-javac -cp .;lanterna-3.1.1.jar engine/skins/impl/DefaultSkin.java
-javac -cp .;lanterna-3.1.1.jar engine/skins/impl/MoneySkin.java
-javac -cp .;lanterna-3.1.1.jar engine/skins/impl/HeartsSkin.java
-javac -cp .;lanterna-3.1.1.jar engine/skins/impl/MysterySkin.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/skins/SkinManager.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/skins/ISkin.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/skins/impl/DefaultSkin.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/skins/impl/MoneySkin.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/skins/impl/HeartsSkin.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/skins/impl/MysterySkin.java
+
 :: Themes
-javac -cp .;lanterna-3.1.1.jar engine/themes/ThemeManager.java
-javac -cp .;lanterna-3.1.1.jar engine/themes/IGameTheme.java
-javac -cp .;lanterna-3.1.1.jar engine/themes/impl/DefaultGameTheme.java
-javac -cp .;lanterna-3.1.1.jar engine/themes/impl/PurpleGameTheme.java
-javac -cp .;lanterna-3.1.1.jar engine/themes/impl/LimeGameTheme.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/ThemeManager.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/IGameTheme.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/impl/DefaultGameTheme.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/impl/PurpleGameTheme.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/impl/LimeGameTheme.java
+
 :: Engine
-javac -cp .;lanterna-3.1.1.jar;json-java.jar engine/Leaderboard.java
-javac -cp .;lanterna-3.1.1.jar engine/Minesweeper.java
-javac -cp .;lanterna-3.1.1.jar engine/UIManager.java
-javac -cp .;lanterna-3.1.1.jar engine/Game.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/Leaderboard.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/Minesweeper.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/UIManager.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/Game.java
+
 :: Main
-::javac -cp .;lanterna-3.1.1.jar Program.java <-- not necessary
-::The main program needs to be executed with all the jars else it won't work
-javaw -cp .;lanterna-3.1.1.jar;json-java.jar Program.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar Program.java
+
+:: The main program needs to be executed with all the jars else it won't work
+javaw -cp .;lanterna-3.1.1.jar;json-java.jar;out Program

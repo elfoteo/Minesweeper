@@ -14,7 +14,6 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -61,7 +60,7 @@ public class Leaderboard {
         boolean running = true;
         while (running) {
             // Add logo
-            int x = Utils.getMaxStringLength(Constants.logo);
+            int x = Utils.getMaxStringLength(Constants.minesweeperLogo);
             int y = 1;
             for (String logoLine : Constants.leaderboardLogo) {
                 textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - x / 2, y, logoLine);

@@ -3,14 +3,13 @@ package engine.skins;
 import engine.utils.Cell;
 
 import java.io.Serializable;
-import java.lang.reflect.InvocationTargetException;
 
 /**
  * An interface defining the contract for different skins in the game.
  * Classes implementing this interface will provide specific characters for each CellType.
  * Extending Serializable because later on the skin will need to be written to a file.
  */
-public interface Skin extends Serializable {
+public interface ISkin extends Serializable {
     /**
      * Gets the character representation for a specific CellType in the Minesweeper game.
      *

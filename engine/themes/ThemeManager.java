@@ -1,6 +1,7 @@
 package engine.themes;
 
 import engine.UIManager;
+import engine.themes.impl.AzureGameTheme;
 import engine.themes.impl.DefaultGameTheme;
 import engine.themes.impl.LimeGameTheme;
 import engine.themes.impl.PurpleGameTheme;
@@ -22,6 +23,7 @@ public class ThemeManager {
         gameThemeClasses.add(getInstanceFor(DefaultGameTheme.class));
         gameThemeClasses.add(getInstanceFor(PurpleGameTheme.class));
         gameThemeClasses.add(getInstanceFor(LimeGameTheme.class));
+        gameThemeClasses.add(getInstanceFor(AzureGameTheme.class));
     }
 
     private static IGameTheme getInstanceFor(Class<? extends IGameTheme> toInstance) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
