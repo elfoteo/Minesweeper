@@ -2,6 +2,7 @@ package engine.themes;
 
 import engine.UIManager;
 import engine.themes.impl.DefaultGameTheme;
+import engine.themes.impl.LimeGameTheme;
 import engine.themes.impl.PurpleGameTheme;
 import engine.utils.Utils;
 
@@ -11,18 +12,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ThemeManager {
-    private static List<GameTheme> gameThemeClasses = new ArrayList<>();
+    private static List<IGameTheme> gameThemeClasses = new ArrayList<>();
 
-    public static List<GameTheme> getThemes() {
+    public static List<IGameTheme> getThemes() {
         return gameThemeClasses;
     }
 
     public static void registerThemes() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         gameThemeClasses.add(getInstanceFor(DefaultGameTheme.class));
         gameThemeClasses.add(getInstanceFor(PurpleGameTheme.class));
+        gameThemeClasses.add(getInstanceFor(LimeGameTheme.class));
     }
 
-    private static GameTheme getInstanceFor(Class<? extends GameTheme> toInstance) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    private static IGameTheme getInstanceFor(Class<? extends IGameTheme> toInstance) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         return toInstance.getConstructor().newInstance();
     }
 
@@ -41,7 +43,7 @@ public class ThemeManager {
     // From: https://stackoverflow.com/questions/10654236/java-save-object-data-to-a-file
     public static void loadSelectedThemeFromFile(String filePath) {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
-            UIManager.selectedTheme = (GameTheme) ois.readObject();
+            UIManager.selectedTheme = (IGameTheme) ois.readObject();
             System.out.println("Selected Theme loaded from file: " + filePath);
         } catch (IOException | ClassNotFoundException ignored) {}
     }

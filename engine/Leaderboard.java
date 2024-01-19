@@ -35,7 +35,7 @@ public class Leaderboard {
         textGraphics.putString(0, 0, "Loading data...");
         screen.refresh();
         String raw;
-        List<User> users = new ArrayList<>();
+        List<User> users;
         try{
             raw = getRawData();
             users = parseJson(raw);
@@ -53,6 +53,8 @@ public class Leaderboard {
         }
         catch (Exception ignore){
             // Catch any exception because it will probably be an internet error
+            // Set users to null to display internet error
+            users = null;
         }
         screen.clear();
 
@@ -84,7 +86,7 @@ public class Leaderboard {
 
             if (users == null){
                 String title = "Connection error";
-                textGraphics.putString(screen.getTerminalSize().getColumns()/2-title.length()/2, screen.getTerminalSize().getRows()/2-1, title);
+                textGraphics.putString(x+width/2-title.length()/2, y+height/2-1, title);
             }
             else{
                 String fs = "   " + String.format("%-" + 12 + "s%-" + 7 + "s%-" + 7 + "s%s", "Username", "Score", "Time", "Level");
@@ -170,7 +172,6 @@ public class Leaderboard {
 
         } catch (Exception e) {
             e.printStackTrace();
-            Utils.Debug(e.toString());
         }
         return "";
     }

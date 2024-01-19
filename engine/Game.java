@@ -70,14 +70,18 @@ public class Game {
         String title = "Minesweeper";
         textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - title.length() / 2, 0, title);
         screen.refresh();
+        // Prepare game
         GameInstance gameInstance = new GameInstance(screen, difficulty);
         Minesweeper minesweeper = gameInstance.getMinesweeper();
+        // Start timer
         startTime = System.currentTimeMillis();
         timer = Executors.newSingleThreadScheduledExecutor();
         // Schedule timer update every 500 milliseconds (half second)
         timerTask = timer.scheduleAtFixedRate(this::updateTimer, 0, 500, TimeUnit.MILLISECONDS);
         String[] field;
         while (gameInstance.getRunning()) {
+            // Change theme colors to the theme the user selected
+            uiManager.applyThemeColors(textGraphics);
             // Display sidebar messages
             Utils.displaySidebarMessage(textGraphics, 1, "Score: %s", String.valueOf(gameInstance.getScore()));
             int mines = minesweeper.getRemainingMines();
@@ -89,7 +93,8 @@ public class Game {
             screen.setCursorPosition(new TerminalPosition(gameInstance.getCursor()[0], gameInstance.getCursor()[1]));
 
             field = minesweeper.getFieldAsString().split("\n");
-
+            textGraphics.setBackgroundColor(TextColor.ANSI.DEFAULT);
+            textGraphics.setForegroundColor(TextColor.ANSI.WHITE);
             int centerX = screen.getTerminalSize().getColumns() / 2 - Utils.getMaxStringLength(field) / 2;
             int centerY = screen.getTerminalSize().getRows() / 2 - field.length / 2;
             int offsetX;
@@ -127,6 +132,7 @@ public class Game {
                     offsetX += 1;
                 }
             }
+            uiManager.applyThemeColors(textGraphics);
             // Draw rectangle around the game
             Rectangle bounds = gameInstance.getGameBounds();
             Utils.drawRect(bounds.x-1, bounds.y-1,
@@ -218,7 +224,7 @@ public class Game {
     }
 
     private void handleKeypress(KeyStroke choice, Minesweeper minesweeper, GameInstance gameInstance) {
-        if (choice.getCharacter() == 'f') {
+        if (choice.getCharacter().toString().equalsIgnoreCase("f")) {
             minesweeper.toggleHighlightCell(gameInstance.getTruePos()[0], gameInstance.getTruePos()[1]);
         }
     }
@@ -261,7 +267,7 @@ public class Game {
         long seconds = TimeUnit.MILLISECONDS.toSeconds(elapsedTime);
         long minutes = TimeUnit.SECONDS.toMinutes(seconds);
         String text = Utils.getGameTimerText(seconds, minutes, elapsedTime);
-
+        uiManager.applyThemeColors(textGraphics);
         textGraphics.putString(0, 3, text);
         // Refresh the screen to see the changes in real time
         try {

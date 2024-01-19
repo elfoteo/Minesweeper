@@ -1,13 +1,13 @@
 package engine.themes.impl;
 
 import com.googlecode.lanterna.TextColor;
-import engine.themes.GameTheme;
+import engine.themes.IGameTheme;
 import engine.utils.Utils;
 
 import java.awt.*;
 import java.io.Serializable;
 
-public class PurpleGameTheme implements GameTheme, Serializable {
+public class PurpleGameTheme implements IGameTheme, Serializable {
     private final Color foregroundColor = Utils.TextColorToAwtColor(new TextColor.RGB(120, 4, 180));
     private final Color backgroundColor = Utils.TextColorToAwtColor(TextColor.ANSI.DEFAULT);
 

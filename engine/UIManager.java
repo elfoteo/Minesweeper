@@ -6,7 +6,6 @@ import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.SimpleTheme;
 import com.googlecode.lanterna.graphics.TextGraphics;
-import com.googlecode.lanterna.graphics.Theme;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
@@ -15,10 +14,10 @@ import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.Terminal;
 import engine.options.Options;
 import engine.options.OptionsInstance;
-import engine.skins.Skin;
+import engine.skins.ISkin;
 import engine.skins.SkinManager;
 import engine.skins.impl.DefaultSkin;
-import engine.themes.GameTheme;
+import engine.themes.IGameTheme;
 import engine.themes.ThemeManager;
 import engine.themes.impl.DefaultGameTheme;
 import engine.utils.Constants;
@@ -32,11 +31,15 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class UIManager {
     private final String[] menu = new String[] {"Play", "Leaderboard", "Skins", "Themes", "Options", "About", "Exit"};
-    public static Skin selectedSkin = new DefaultSkin();
-    public static GameTheme selectedTheme = new DefaultGameTheme();
+    public static ISkin selectedSkin = new DefaultSkin();
+    public static IGameTheme selectedTheme = new DefaultGameTheme();
     private int selectedIndex = 0;
     private final Terminal terminal;
     private final Screen screen;
@@ -46,6 +49,8 @@ public class UIManager {
     public Leaderboard leaderboard;
     private final Game game;
     private final OptionsInstance options;
+    private MenuPopupWindow themesMenuWindow;
+    private RadioBoxList<String> themesMenuRadioboxList;
     public UIManager(Terminal terminal) throws IOException {
         this.terminal = terminal;
 
@@ -110,6 +115,11 @@ public class UIManager {
 
     public SimpleTheme getCancelButtonTheme(){
         return new SimpleTheme(TextColor.ANSI.RED, selectedTheme.getBackgroundColor(), SGR.BOLD);
+    }
+
+    public void applyThemeColors(TextGraphics textGraphics){
+        textGraphics.setForegroundColor(selectedTheme.getForegroundColor());
+        textGraphics.setBackgroundColor(selectedTheme.getBackgroundColor());
     }
 
     public boolean showDataCollectionWarning() throws IOException {
@@ -203,6 +213,7 @@ public class UIManager {
         } catch (Exception ignore){}
         boolean running = true;
         while (running){
+            applyThemeColors(textGraphics);
             // Add logo
             int x = Utils.getMaxStringLength(Constants.logo);
             int y = 1;
@@ -215,13 +226,14 @@ public class UIManager {
 
             for (String segment : Constants.creatorText.split("\\*")) {
                 // Display the non-star segment without any modifiers
+                applyThemeColors(textGraphics);
                 textGraphics.putString(screen.getTerminalSize().getColumns() - Constants.creatorText.length() - 1 + xOffset,
                         terminal.getTerminalSize().getRows() - 1, segment);
                 xOffset += segment.length();
 
                 // Apply the blinking style to the next star
                 textGraphics.setStyleFrom(Constants.blinkStyle);
-
+                applyThemeColors(textGraphics);
                 // Display the star with the blinking style
                 textGraphics.putString(screen.getTerminalSize().getColumns() - Constants.creatorText.length() - 1 + xOffset,
                         terminal.getTerminalSize().getRows() - 1, "*");
@@ -237,6 +249,7 @@ public class UIManager {
             // Clear any modifiers after the loop
             textGraphics.clearModifiers();
             screen.refresh();
+            applyThemeColors(textGraphics);
 
             x = Utils.getMaxStringLength(menu)+2;
             y = Constants.logo.length+2;
@@ -291,18 +304,27 @@ public class UIManager {
                     case "Leaderboard":
                         leaderboard.displayLeaderboard();
                         break;
-                    case "About":
-                        showAboutMenu();
-                        break;
                     case "Skins":
                         showSkinsMenu();
                         break;
                     case "Themes":
-                        showThemesMenu();
+                        ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
+                        // Schedule timer update every 500 milliseconds (half second)
+                        ScheduledFuture<?> timerTask = timer.scheduleAtFixedRate(this::updateTheme, 0, 100, TimeUnit.MILLISECONDS);
+                        try {
+                            showThemesMenu();
+                        }catch (Exception ignore){
+
+                        }
+                        timerTask.cancel(true);
+                        timer.shutdown();
                         break;
                     case "Options":
                         // TODO: Music options
                         showOptions();
+                        break;
+                    case "About":
+                        showAboutMenu();
                         break;
                     case "Exit":
                         running = false;
@@ -314,40 +336,57 @@ public class UIManager {
         Options.saveOptionsToFile(options);
     }
 
+    private void updateTheme() {
+        try{
+            List<IGameTheme> themes = ThemeManager.getThemes();
+            // Necessary
+            Thread.sleep(20);
+            for (IGameTheme theme : themes){
+                if (theme.getThemeName().equals(themesMenuRadioboxList.getCheckedItem())){
+                    selectedTheme = theme;
+                }
+            }
+            themesMenuWindow.setTheme(getWindowTheme());
+        }
+        catch (Exception ex){
+
+        }
+    }
+
     private void showThemesMenu() throws IOException {
         screen.clear();
-        MenuPopupWindow window = new MenuPopupWindow(mainPanel);
-        window.setTheme(getWindowTheme());
+        themesMenuWindow = new MenuPopupWindow(mainPanel);
+        themesMenuWindow.setTheme(getWindowTheme());
         Panel container = new Panel();
         container.addComponent(new Label("Skins"));
 
         // Username settings
         container.addComponent(new EmptySpace(new TerminalSize(1, 1))); // Add some space
-        // Skin list
-        List<GameTheme> themes = ThemeManager.getThemes();
-        RadioBoxList<String> radioBoxList = getRadiobuttonThemeList(themes);
+        // Themes list
+        List<IGameTheme> themes = ThemeManager.getThemes();
+        themesMenuRadioboxList = getRadiobuttonThemeList(themes);
 
-        container.addComponent(radioBoxList);
+        container.addComponent(themesMenuRadioboxList);
 
         // Exit button
         container.addComponent(new EmptySpace(new TerminalSize(1, 1))); // Add some space
-        Button exitButton = new Button("Exit", window::close);
+        Button exitButton = new Button("Exit", themesMenuWindow::close);
         exitButton.setTheme(getCancelButtonTheme());
         container.addComponent(exitButton);
 
 
-        window.setComponent(container);
+        themesMenuWindow.setComponent(container);
         // Center the window
-        window.setPosition(
+        themesMenuWindow.setPosition(
                 new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - 10,
                         terminal.getTerminalSize().getRows() / 2 - 10
                 )
         );
 
-        gui.addWindowAndWait(window);
+        gui.addWindowAndWait(themesMenuWindow);
         // The user exited the menu
-        for (GameTheme theme : themes){
-            if (theme.getThemeName().equals(radioBoxList.getCheckedItem())){
+        for (IGameTheme theme : themes){
+            if (theme.getThemeName().equals(themesMenuRadioboxList.getCheckedItem())){
                 selectedTheme = theme;
                 try{
                     ThemeManager.saveSelectedThemeToFile(Constants.themeFile);
@@ -370,7 +409,7 @@ public class UIManager {
         // Username settings
         container.addComponent(new EmptySpace(new TerminalSize(1, 1))); // Add some space
         // Skin list
-        List<Skin> skins = SkinManager.getSkins();
+        List<ISkin> skins = SkinManager.getSkins();
         RadioBoxList<String> radioBoxList = getRadiobuttonSkinList(skins);
 
         container.addComponent(radioBoxList);
@@ -392,7 +431,7 @@ public class UIManager {
 
         gui.addWindowAndWait(window);
         // The user exited the menu
-        for (Skin skin : skins){
+        for (ISkin skin : skins){
             if (skin.getSkinName().equals(radioBoxList.getCheckedItem())){
                 selectedSkin = skin;
                 try{
@@ -406,11 +445,11 @@ public class UIManager {
         screen.clear();
     }
 
-    private static RadioBoxList<String> getRadiobuttonSkinList(List<Skin> skins) {
+    private static RadioBoxList<String> getRadiobuttonSkinList(List<ISkin> skins) {
         TerminalSize size = new TerminalSize(20, 10);
         RadioBoxList<String> radioBoxList = new RadioBoxList<>(size);
         // For each item in the list, cast it to a Skin that extends the skin method
-        for (Skin skin : skins){
+        for (ISkin skin : skins){
             radioBoxList.addItem(skin.getSkinName());
             // Set the selected radiobutton to the selected skin
             if (skin.getClass() == selectedSkin.getClass()){
@@ -420,11 +459,11 @@ public class UIManager {
         return radioBoxList;
     }
 
-    private static RadioBoxList<String> getRadiobuttonThemeList(List<GameTheme> themes) {
+    private static RadioBoxList<String> getRadiobuttonThemeList(List<IGameTheme> themes) {
         TerminalSize size = new TerminalSize(20, 10);
         RadioBoxList<String> radioBoxList = new RadioBoxList<>(size);
         // For each item in the list, cast it to a Skin that extends the skin method
-        for (GameTheme theme : themes){
+        for (IGameTheme theme : themes){
             radioBoxList.addItem(theme.getThemeName());
             // Set the selected radiobutton to the selected skin
             if (theme.getClass() == selectedTheme.getClass()){
@@ -474,7 +513,7 @@ public class UIManager {
         screen.clear();
         // Hide cursor
         Utils.hideCursor(0, 0, textGraphics);
-
+        applyThemeColors(textGraphics);
         // Center the "About" title
         String title = "About";
         textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - title.length() / 2, 0, title);
@@ -498,7 +537,7 @@ public class UIManager {
         // Display the information
         screen.refresh();
 
-        // Wait for Escape key to exit
+        // Wait for the Escape key to be pressed to exit
         while (true) {
             KeyStroke choice = screen.readInput();
             if (choice.getKeyType() == KeyType.Escape) {

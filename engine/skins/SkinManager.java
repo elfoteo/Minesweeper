@@ -10,9 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SkinManager {
-    private static List<Skin> skinClasses = new ArrayList<>();
+    private static List<ISkin> skinClasses = new ArrayList<>();
 
-    public static List<Skin> getSkins() {
+    public static List<ISkin> getSkins() {
         return skinClasses;
     }
 
@@ -24,7 +24,7 @@ public class SkinManager {
         skinClasses.add(getInstanceFor(MysterySkin.class));
     }
 
-    private static Skin getInstanceFor(Class<? extends Skin> toInstance) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    private static ISkin getInstanceFor(Class<? extends ISkin> toInstance) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         return toInstance.getConstructor().newInstance();
     }
 
@@ -43,7 +43,7 @@ public class SkinManager {
     // From: https://stackoverflow.com/questions/10654236/java-save-object-data-to-a-file
     public static void loadSelectedSkinFromFile(String filePath) {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
-            UIManager.selectedSkin = (Skin) ois.readObject();
+            UIManager.selectedSkin = (ISkin) ois.readObject();
             System.out.println("Selected skin loaded from file: " + filePath);
         } catch (IOException | ClassNotFoundException ignored) {
         }

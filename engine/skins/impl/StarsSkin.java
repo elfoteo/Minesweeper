@@ -1,11 +1,11 @@
 package engine.skins.impl;
 
-import engine.skins.Skin;
+import engine.skins.ISkin;
 import engine.utils.Cell;
 
 import java.io.Serializable;
 
-public class StarsSkin implements Skin, Serializable {
+public class StarsSkin implements ISkin, Serializable {
     @Override
     public char getChar(Cell cell) {
         switch (cell.type) {
