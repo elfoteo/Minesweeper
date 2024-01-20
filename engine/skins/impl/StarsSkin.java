@@ -8,6 +8,9 @@ import java.io.Serializable;
 public class StarsSkin implements ISkin, Serializable {
     @Override
     public char getChar(Cell cell) {
+        if (cell.isFlagged()){
+            return '\u25CA';
+        }
         switch (cell.type) {
             case NOT_SET -> {
                 return '.';

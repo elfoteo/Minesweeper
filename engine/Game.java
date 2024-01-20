@@ -96,24 +96,23 @@ public class Game {
             textGraphics.setForegroundColor(TextColor.ANSI.WHITE);
             int centerX = screen.getTerminalSize().getColumns() / 2 - Utils.getMaxStringLength(field) / 2;
             int centerY = screen.getTerminalSize().getRows() / 2 - field.length / 2;
-            int offsetX;
+            int offsetX = 0;
 
-            for (int row = 0; row < minesweeper.getFieldWidth(); row++) {
-                offsetX = 0;
-
-                for (int col = 0; col < minesweeper.getFieldHeight(); col++) {
-                    Cell cell = minesweeper.getCell(row, col);
+            for (int col = 0; col < minesweeper.getFieldWidth(); col++) {
+                for (int row = 0; row < minesweeper.getFieldHeight(); row++) {
+                    Cell cell = minesweeper.getCell(col, row);
                     String cellContent = String.valueOf(cell.getChar());
 
                     if (minesweeper.isCellHighlighted(col, row)) {
                         // Highlight the cell if needed
                         textGraphics.setForegroundColor(Constants.warningColor);
-                    } else if (minesweeper.isUncovered(row, col) && cell.type == CellType.NUMBER) {
+                        cellContent = String.valueOf(minesweeper.getCell(col, row, true).getChar());
+                    } else if (minesweeper.isUncovered(col, row) && cell.type == CellType.NUMBER) {
                         // Color cell numbers
                         int number = cell.getNumber();
 
                         // Set color based on conditions
-                        if (number == minesweeper.getNumbersOfFlaggedCells(row, col) && uiManager.getOptions().isGrayOutNearbyCells()) {
+                        if (number == minesweeper.getNumbersOfFlaggedCells(col, row) && uiManager.getOptions().isGrayOutNearbyCells()) {
                             // Give a hint only if the options allow it
                             textGraphics.setForegroundColor(getWarningColor(number, 0.2));
                         } else {
@@ -134,10 +133,8 @@ public class Game {
 
                     // Reset foreground color to default
                     textGraphics.setForegroundColor(TextColor.ANSI.DEFAULT);
-
-                    // Add extra space at the end
-                    offsetX += 1;
                 }
+                offsetX += 1;
             }
             uiManager.applyThemeColors(textGraphics);
             // Draw rectangle around the game
@@ -237,7 +234,7 @@ public class Game {
     }
 
     private void handleEnter(String username, MinesweeperDifficulty difficulty, Minesweeper minesweeper, GameInstance gameInstance) {
-        boolean wasUncovered = minesweeper.isUncovered(gameInstance.getTruePos()[1], gameInstance.getTruePos()[0]);
+        boolean wasUncovered = minesweeper.isUncovered(gameInstance.getTruePos()[0], gameInstance.getTruePos()[1]);
         Tuple<CellType, Tuple<Integer, Boolean>> minedTile = minesweeper.uncover(gameInstance.getTruePos()[0],
                 gameInstance.getTruePos()[1]);
 

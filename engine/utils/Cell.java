@@ -4,6 +4,8 @@ import engine.UIManager;
 
 public class Cell {
     public CellType type;
+    private boolean uncovered = false;
+    private boolean flagged = false;
     // Additional property for NUMBER cells
     private int number;
 
@@ -39,5 +41,21 @@ public class Cell {
 
     public static char getCharFor(CellType type){
         return (new Cell(type)).getChar();
+    }
+
+    public boolean isUncovered() {
+        return uncovered;
+    }
+
+    public void setUncovered(boolean uncovered) {
+        this.uncovered = uncovered;
+    }
+
+    public boolean isFlagged() {
+        return flagged;
+    }
+
+    public void setFlagged(boolean flagged) {
+        this.flagged = flagged;
     }
 }
