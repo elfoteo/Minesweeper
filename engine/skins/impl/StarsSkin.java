@@ -19,7 +19,7 @@ public class StarsSkin implements ISkin, Serializable {
                 return cell.getNumberAsChar();
             }
             case MINE -> {
-                return '*';
+                return '\u29EB';
             }
             case HIDDEN -> {
                 return '\u262A';

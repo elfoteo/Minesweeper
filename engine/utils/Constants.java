@@ -7,7 +7,8 @@ import com.googlecode.lanterna.graphics.StyleSet;
 import java.util.EnumSet;
 
 public class Constants {
-    public static final TextColor cellHighlightColor = new TextColor.RGB(235, 128, 52);
+    public static final TextColor warningColor = new TextColor.RGB(235, 128, 52);
+    public static final TextColor dangerColor = new TextColor.RGB(200, 10, 13);
     public static final String[] minesweeperLogo = """
  __  __ _                                                  \s
 |  \\/  (_)                                                 \s
@@ -34,6 +35,8 @@ public class Constants {
  |_____/ \\___|\\__|\\__|_|_| |_|\\__, |___/
                                __/ |   \s
                               |___/    \s""".split("\n");
+    public static final String winMessage = "Congratulations! You've successfully cleared the minefield!\nScore: %d\nPress \"Play Again\" to start again or \"Exit\" to exit";
+    public static final String lossMessage = "Oh no! You've uncovered a mine!\nScore: %d\nPress \"Play Again\" to start again or \"Exit\" to exit";
     public static final String creatorText = "Game made by *Matteo Ciocci*";
     public static final StyleSet<StyleSet.Set> blinkStyle = (new StyleSet.Set()).setModifiers(EnumSet.of(SGR.BLINK));
     public static final String apiUrl = "https://minesweeperapi.cyclic.app/";

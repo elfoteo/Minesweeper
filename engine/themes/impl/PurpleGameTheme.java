@@ -8,7 +8,7 @@ import java.awt.*;
 import java.io.Serializable;
 
 public class PurpleGameTheme implements IGameTheme, Serializable {
-    private final Color foregroundColor = Utils.TextColorToAwtColor(new TextColor.RGB(120, 4, 180));
+    private final Color foregroundColor = Utils.TextColorToAwtColor(new TextColor.RGB(180, 40, 255));
     private final Color backgroundColor = Utils.TextColorToAwtColor(TextColor.ANSI.DEFAULT);
 
     @Override

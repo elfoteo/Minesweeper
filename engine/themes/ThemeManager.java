@@ -1,10 +1,7 @@
 package engine.themes;
 
 import engine.UIManager;
-import engine.themes.impl.AzureGameTheme;
-import engine.themes.impl.DefaultGameTheme;
-import engine.themes.impl.LimeGameTheme;
-import engine.themes.impl.PurpleGameTheme;
+import engine.themes.impl.*;
 import engine.utils.Utils;
 
 import java.io.*;

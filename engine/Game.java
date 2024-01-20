@@ -59,11 +59,10 @@ public class Game {
      * It returns a boolean indicating whether the player wants to play again after completing the session.
      * If an I/O error occurs during the gameplay or user interaction, it is thrown as an IOException.</p>
      *
-     * @param username   The username of the player.
-     * @param difficulty The difficulty level of the Minesweeper game.
-     * @return true if the player wants to play again, false otherwise.
-     * @throws IOException If an I/O error occurs during gameplay or user interaction.
-     * @since 2024-01-14
+     * @param username      The username of the player.
+     * @param difficulty    The difficulty level of the Minesweeper game.
+     * @return              true if the player wants to play again, false otherwise.
+     * @throws IOException  If an I/O error occurs during gameplay or user interaction.
      */
     public boolean start(String username, MinesweeperDifficulty difficulty) throws IOException {
         screen.clear();
@@ -108,7 +107,7 @@ public class Game {
 
                     if (minesweeper.isCellHighlighted(col, row)) {
                         // Highlight the cell if needed
-                        textGraphics.setForegroundColor(Constants.cellHighlightColor);
+                        textGraphics.setForegroundColor(Constants.warningColor);
                     } else if (minesweeper.isUncovered(row, col) && cell.type == CellType.NUMBER) {
                         // Color cell numbers
                         int number = cell.getNumber();
@@ -120,6 +119,14 @@ public class Game {
                         } else {
                             textGraphics.setForegroundColor(getWarningColor(number));
                         }
+                    }
+                    else{
+                        textGraphics.setForegroundColor(TextColor.ANSI.DEFAULT);
+                    }
+                    // Can happen if the player decides to continue the game, loosing score
+                    if (cell.type == CellType.MINE){
+                        // If the cell is a mine, then color it red
+                        textGraphics.setForegroundColor(Constants.dangerColor);
                     }
 
                     // Display the cell content
@@ -230,7 +237,8 @@ public class Game {
     }
 
     private void handleEnter(String username, MinesweeperDifficulty difficulty, Minesweeper minesweeper, GameInstance gameInstance) {
-        Tuple<Character, Tuple<Integer, Boolean>> minedTile = minesweeper.uncover(gameInstance.getTruePos()[0],
+        boolean wasUncovered = minesweeper.isUncovered(gameInstance.getTruePos()[1], gameInstance.getTruePos()[0]);
+        Tuple<CellType, Tuple<Integer, Boolean>> minedTile = minesweeper.uncover(gameInstance.getTruePos()[0],
                 gameInstance.getTruePos()[1]);
 
         if (minedTile.first() == null) {
@@ -246,15 +254,36 @@ public class Game {
             // Send data async to the leaderboard
             uiManager.getLeaderboard().sendPlayerDataAsync(new Leaderboard.User(username, gameInstance.getScore(), getTimerRemainingTime(), difficulty));
             // Show win popup
-            uiManager.showPlayAgainPopup(String.format("Congratulations! You've successfully cleared the minefield!\nScore: %d\nPress \"Play Again\" to start again or \"Exit\" to exit", gameInstance.getScore()), gameInstance);
+            uiManager.showGameEndPopup(String.format(Constants.winMessage, gameInstance.getScore()), gameInstance, false, 0);
             gameInstance.setGameEnded(true);
-        } else if (minedTile.first() == '*') {
-            // Player has lost
+        } else if (minedTile.first() == CellType.MINE && !wasUncovered) {
+            // If the tile that the player has mined is a mine, and it wasn't yet mined, The player has lost
             // Stop the timer
             stopTimer();
             // Show lose popup
-            uiManager.showPlayAgainPopup(String.format("Oh no! You've uncovered a mine!\nScore: %d\nPress \"Play Again\" to start again or \"Exit\" to exit", gameInstance.getScore()), gameInstance);
-            gameInstance.setGameEnded(true);
+            long sysTime = pauseTimer();
+            int rt = gameInstance.getRespawnTimes();
+            boolean continueButtonPress;
+            // The player can continue playing only if it hasn't already respawned more than 3 times and
+            // has more then 9 score
+            if (rt < 3 && gameInstance.getScore() >= 10){
+                continueButtonPress = uiManager.showGameEndPopup(String.format(Constants.lossMessage, gameInstance.getScore()), gameInstance, true, -10*(rt+1));
+            }
+            else{
+                continueButtonPress = uiManager.showGameEndPopup(String.format(Constants.lossMessage, gameInstance.getScore()), gameInstance, false, 0);
+            }
+
+            if (continueButtonPress){
+                // Subtract score and let the game continue
+                gameInstance.setScore(gameInstance.getScore()-10);
+                // Add 1 to respawn times
+                gameInstance.setRespawnTimes(rt+1);
+                resumeTimer(sysTime);
+            }
+            else {
+                stopTimer();
+                gameInstance.setGameEnded(true);
+            }
         } else {
             // If the tile wasn't already mined
             gameInstance.setScore(gameInstance.getScore()+minedTile.second().first());
@@ -291,10 +320,42 @@ public class Game {
         timer.shutdown();
     }
 
+    /**
+     * Resumes the timer and schedules calls every 500ms.
+     *
+     * @param sysTime The system time when the timer was paused.
+     */
+    private void resumeTimer(long sysTime) {
+        // Ensure the timer is not null and not shut down
+        if (timer == null || timer.isShutdown()) {
+            timer = Executors.newSingleThreadScheduledExecutor();
+        }
+
+        startTime = startTime + (System.currentTimeMillis() - sysTime);
+        timerTask = timer.scheduleAtFixedRate(this::updateTimer, 0, 500, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Pauses the timer by canceling the existing timer task and returning the current system time.
+     *
+     * @return The system time when the timer is paused.
+     */
+    private long pauseTimer() {
+        // Ensure the timer is not null and not shut down
+        if (timer == null || timer.isShutdown()) {
+            return System.currentTimeMillis();
+        }
+
+        if (timerTask != null) {
+            timerTask.cancel(false);
+        }
+        return System.currentTimeMillis();
+    }
+
     private void handleEOFOrEscape(KeyStroke choice, GameInstance gameInstance) {
         if (choice.getKeyType() == KeyType.Escape) {
-            long sysTime = System.currentTimeMillis();
-            timerTask.cancel(false);
+            // TODO: Change this to be a pause menu
+            long sysTime = pauseTimer();
             String warningMessage = "Do you really want to exit?";
 
             MenuPopupWindow popupWindow = new MenuPopupWindow(mainPanel);
@@ -303,8 +364,7 @@ public class Game {
             Panel buttonContainer = new Panel(new LinearLayout(Direction.HORIZONTAL));
             popupContainer.addComponent(new Label(warningMessage));
             Button cancelButton = new Button("No", () -> {
-                startTime = startTime+(System.currentTimeMillis()-sysTime);
-                timerTask = timer.scheduleAtFixedRate(this::updateTimer, 0, 500, TimeUnit.MILLISECONDS);
+                resumeTimer(sysTime);
                 popupWindow.close();
             });
             cancelButton.setPreferredSize(new TerminalSize(4, 1));

@@ -116,7 +116,7 @@ public class Minesweeper {
      * @param y The y-coordinate of the cell to be uncovered.
      * @return A tuple containing the uncovered cell's character, the score, and a flag indicating whether the game has ended.
      */
-    public Tuple<Character, Tuple<Integer, Boolean>> uncover(int x, int y) {
+    public Tuple<CellType, Tuple<Integer, Boolean>> uncover(int x, int y) {
         if (isCellHighlighted(x, y)){
             return new Tuple<>(null, new Tuple<>(0, false));
         }
@@ -167,7 +167,7 @@ public class Minesweeper {
             // Ignore if the coordinates are out of bounds
         }
 
-        return new Tuple<>(Cell.getCharFor(cellValue), new Tuple<>(score, gameEnded));
+        return new Tuple<>(cellValue, new Tuple<>(score, gameEnded));
     }
 
     /**

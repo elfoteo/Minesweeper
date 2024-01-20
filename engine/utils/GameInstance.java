@@ -6,11 +6,10 @@ import engine.Minesweeper;
 import java.awt.*;
 
 public class GameInstance{
+    private int respawnTimes;
     private int[] cursor;
     private int[] truePos;
     private int score;
-
-    // Intellij suggestion
     private boolean running;
     private boolean playAgain;
     private boolean gameEnded;
@@ -32,10 +31,10 @@ public class GameInstance{
         truePos = new int[] {0, 0};
         score = 0;
 
-        // Intellij suggestion
         running = true;
         playAgain = false;
         gameEnded = false;
+        respawnTimes = 0;
     }
 
     // Getters
@@ -102,5 +101,13 @@ public class GameInstance{
 
     public void setGameBounds(Rectangle gameBounds) {
         this.gameBounds = gameBounds;
+    }
+
+    public int getRespawnTimes() {
+        return respawnTimes;
+    }
+
+    public void setRespawnTimes(int respawnTimes) {
+        this.respawnTimes = respawnTimes;
     }
 }

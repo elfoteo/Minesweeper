@@ -41,8 +41,8 @@ public class Utils {
      *
      * @param message The debugging message to be displayed.
      */
-    public static void Debug(String message){
-        JOptionPane.showMessageDialog(null, message);
+    public static void Debug(Object message) {
+        JOptionPane.showMessageDialog(null, message.toString());
     }
     public static String exceptionToString(Exception ex){
         // Construct the crash report message with stack trace

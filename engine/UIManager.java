@@ -113,6 +113,10 @@ public class UIManager {
         return new SimpleTheme(TextColor.ANSI.GREEN, selectedTheme.getBackgroundColor(), SGR.BOLD);
     }
 
+    public SimpleTheme getWarningButtonTheme(){
+        return new SimpleTheme(Constants.warningColor, selectedTheme.getBackgroundColor(), SGR.BOLD);
+    }
+
     public SimpleTheme getCancelButtonTheme(){
         return new SimpleTheme(TextColor.ANSI.RED, selectedTheme.getBackgroundColor(), SGR.BOLD);
     }
@@ -181,7 +185,6 @@ public class UIManager {
             }
         } catch (IOException e) {
             Utils.Debug(e.toString());
-            // Handle the exception according to your needs
         }
         return true;
     }
@@ -322,7 +325,7 @@ public class UIManager {
 
     private void showSettings() throws IOException {
         int localIndex = 0;
-        String[] localOptions = new String[] {"Skins", "Themes", "Options"};
+        String[] localOptions = new String[] {"Skins", "Themes", "Options", "Back"};
         screen.clear();
         boolean running = true;
         while (running) {
@@ -371,6 +374,8 @@ public class UIManager {
                 if (localIndex < 0) {
                     localIndex = localOptions.length - 1;
                 }
+            } else if (choice.getKeyType() == KeyType.Escape || choice.getKeyType() == KeyType.EOF) {
+                return;
             } else if (choice.getKeyType() == KeyType.Enter) {
                 switch (localOptions[localIndex]) {
                     case "Skins":
@@ -396,6 +401,9 @@ public class UIManager {
                     case "Options":
                         // TODO: Music options
                         showOptions();
+                        break;
+                    case "Back":
+                        running = false;
                         break;
                 }
             }
@@ -540,27 +548,47 @@ public class UIManager {
         return radioBoxList;
     }
 
-    public void showPlayAgainPopup(String message, GameInstance gameInstance) {
+    /**
+     * Displays a popup window with a message and options for the player to play again or exit.
+     * Optionally includes a "Continue" button with a penalty to the score.
+     *
+     * @param message       The message to be displayed in the popup window.
+     * @param gameInstance  The GameInstance object representing the current game state.
+     * @param showContinue  If true, includes a "Continue" button; otherwise, only "Play Again" and "Exit" buttons are shown.
+     * @return              True if the "Continue" button was pressed, false otherwise.
+     */
+    public boolean showGameEndPopup(String message, GameInstance gameInstance, boolean showContinue, int subScore) {
+        boolean[] continuePressed = new boolean[] {false};
         MenuPopupWindow window = new MenuPopupWindow(mainPanel);
         window.setTheme(getWindowTheme());
-
-        Button exitButton = new Button("Exit", window::close);
-        exitButton.setTheme(getCancelButtonTheme());
-        exitButton.setPreferredSize(new TerminalSize(exitButton.getLabel().length()+2, 1));
+        Panel panel = new Panel();
+        Panel buttonsPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
 
         Button playAgainButton = new Button("Play Again", () -> {
             gameInstance.setPlayAgain(true);
             window.close();
         });
         playAgainButton.setTheme(getConfirmButtonTheme());
+        buttonsPanel.addComponent(playAgainButton);
+
+        if (showContinue){
+            Button continueButton = new Button(String.format("Continue [%s score]", subScore), () -> {
+                gameInstance.setPlayAgain(true);
+                continuePressed[0] = true;
+                window.close();
+            });
+            continueButton.setTheme(getWarningButtonTheme());
+            buttonsPanel.addComponent(continueButton);
+        }
+
+        Button exitButton = new Button("Exit", window::close);
+        exitButton.setTheme(getCancelButtonTheme());
+        exitButton.setPreferredSize(new TerminalSize(exitButton.getLabel().length()+2, 1));
+        exitButton.setPosition(new TerminalPosition(0, 5));
+        buttonsPanel.addComponent(exitButton);
 
         Label textBox = new Label(message);
 
-        Panel panel = new Panel();
-        Panel buttonsPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        exitButton.setPosition(new TerminalPosition(0, 5));
-        buttonsPanel.addComponent(exitButton);
-        buttonsPanel.addComponent(playAgainButton);
         panel.addComponent(textBox);
         panel.addComponent(buttonsPanel);
 
@@ -572,8 +600,9 @@ public class UIManager {
                     terminal.getTerminalSize().getRows() / 2 - 4));
             gui.addWindowAndWait(window);
         } catch (IOException ignore) {
-            // Handle IOException
+            // Ignore exception
         }
+        return continuePressed[0];
     }
 
     public void showAboutMenu() throws IOException {
