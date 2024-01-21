@@ -351,41 +351,99 @@ public class Game {
 
     private void handleEOFOrEscape(KeyStroke choice, GameInstance gameInstance) {
         if (choice.getKeyType() == KeyType.Escape) {
-            // TODO: Change this to be a pause menu
-            long sysTime = pauseTimer();
-            String warningMessage = "Do you really want to exit?";
-
-            MenuPopupWindow popupWindow = new MenuPopupWindow(mainPanel);
-            popupWindow.setTheme(uiManager.getWindowTheme());
-            Panel popupContainer = new Panel();
-            Panel buttonContainer = new Panel(new LinearLayout(Direction.HORIZONTAL));
-            popupContainer.addComponent(new Label(warningMessage));
-            Button cancelButton = new Button("No", () -> {
-                resumeTimer(sysTime);
-                popupWindow.close();
-            });
-            cancelButton.setPreferredSize(new TerminalSize(4, 1));
-            cancelButton.setTheme(uiManager.getConfirmButtonTheme());
-            buttonContainer.addComponent(cancelButton);
-            Button exitButton = new Button("Yes", () -> {
-                gameInstance.setRunning(false);
-                popupWindow.close();
-            });
-            exitButton.setPreferredSize(new TerminalSize(5, 1));
-            exitButton.setTheme(uiManager.getCancelButtonTheme());
-            buttonContainer.addComponent(exitButton);
-            popupContainer.addComponent(buttonContainer);
-            try {
-                popupWindow.setComponent(popupContainer);
-                popupWindow.setPosition(new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - warningMessage.length() / 2,
-                        terminal.getTerminalSize().getRows() / 2 - 4));
-                gui.addWindowAndWait(popupWindow);
-            } catch (IOException ignore) {
-
-            }
-        }
-        else{
+            // TODO: Implement a pause menu
+            showPauseMenu(gameInstance);
+        } else {
             gameInstance.setRunning(false);
         }
+    }
+
+    private void showPauseMenu(GameInstance gameInstance) {
+        long sysTime = pauseTimer();
+        String warningMessage = "Pause";
+
+        MenuPopupWindow popupWindow = new MenuPopupWindow(mainPanel);
+        popupWindow.setTheme(uiManager.getWindowTheme());
+        Panel popupContainer = new Panel();
+        Panel titleContainer = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        Panel buttonContainer = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        titleContainer.addComponent(new EmptySpace(uiManager.getThemeBackgroundColor(),
+                new TerminalSize(9-warningMessage.length()/2, 1)));
+        titleContainer.addComponent(new Label(warningMessage));
+        popupContainer.addComponent(titleContainer);
+        String minesMessage = gameInstance.getMinesweeper().getRemainingMines() < 0 ? "Mines: %s (Too many cells flagged)" : "Mines: %s";
+        popupContainer.addComponent(new Label(String.format("Score: %s\n"+minesMessage, gameInstance.getScore(), gameInstance.getMinesweeper().getRemainingMines())));
+
+        Button resumeButton = new Button("Resume", () -> {
+            resumeTimer(sysTime);
+            popupWindow.close();
+        });
+        resumeButton.setPreferredSize(new TerminalSize(resumeButton.getLabel().length()+2, 1));
+        resumeButton.setTheme(uiManager.getConfirmButtonTheme());
+        buttonContainer.addComponent(resumeButton);
+
+        Button exitButton = new Button("Exit", () -> {
+            if (warningExitMessage(gameInstance)){
+                gameInstance.setRunning(false);
+                popupWindow.close();
+            }
+        });
+        exitButton.setPreferredSize(new TerminalSize(exitButton.getLabel().length()+2, 1));
+        exitButton.setTheme(uiManager.getCancelButtonTheme());
+        buttonContainer.addComponent(exitButton);
+        popupContainer.addComponent(new EmptySpace(uiManager.getThemeBackgroundColor(), new TerminalSize(20, 1)));
+        popupContainer.addComponent(buttonContainer);
+
+        try {
+            popupWindow.setComponent(popupContainer);
+            popupWindow.setPosition(new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - 10,
+                    terminal.getTerminalSize().getRows() / 2 - 4));
+            gui.addWindowAndWait(popupWindow);
+        } catch (IOException ignore) {
+            // Handle the exception as needed
+        }
+    }
+
+    private boolean warningExitMessage(GameInstance gameInstance) {
+        boolean[] res = new boolean[] {false};
+
+        long sysTime = pauseTimer();
+        String warningMessage = "Do you really want to exit?\nAll the progress will be lost";
+
+        MenuPopupWindow popupWindow = new MenuPopupWindow(mainPanel);
+        popupWindow.setTheme(uiManager.getWindowTheme());
+        Panel popupContainer = new Panel();
+        Panel buttonContainer = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        popupContainer.addComponent(new Label(warningMessage));
+
+        Button cancelButton = new Button("No", () -> {
+            res[0] = false;
+            resumeTimer(sysTime);
+            popupWindow.close();
+        });
+        cancelButton.setPreferredSize(new TerminalSize(4, 1));
+        cancelButton.setTheme(uiManager.getConfirmButtonTheme());
+        buttonContainer.addComponent(cancelButton);
+
+        Button exitButton = new Button("Yes", () -> {
+            res[0] = true;
+            gameInstance.setRunning(false);
+            popupWindow.close();
+        });
+        exitButton.setPreferredSize(new TerminalSize(5, 1));
+        exitButton.setTheme(uiManager.getCancelButtonTheme());
+        buttonContainer.addComponent(exitButton);
+
+        popupContainer.addComponent(buttonContainer);
+
+        try {
+            popupWindow.setComponent(popupContainer);
+            popupWindow.setPosition(new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - warningMessage.length() / 2,
+                    terminal.getTerminalSize().getRows() / 2 - 4));
+            gui.addWindowAndWait(popupWindow);
+        } catch (IOException ignore) {
+            // Handle the exception as needed
+        }
+        return res[0];
     }
 }

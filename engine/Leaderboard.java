@@ -5,6 +5,7 @@ import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
 import engine.utils.Constants;
+import engine.utils.LocalLeaderboardAPI;
 import engine.utils.MinesweeperDifficulty;
 import engine.utils.Utils;
 import org.json.JSONArray;
@@ -22,45 +23,71 @@ import java.util.stream.Collectors;
 public class Leaderboard {
     private final TextGraphics textGraphics;
     private final Screen screen;
+    private LocalLeaderboardAPI localLeaderboard;
 
     public Leaderboard(Screen screen, TextGraphics textGraphics){
         this.screen = screen;
         this.textGraphics = textGraphics;
+        this.localLeaderboard = new LocalLeaderboardAPI();
         // If the computer has a proxy set, we need to use that proxy
         System.setProperty("java.net.useSystemProxies", "true");
     }
-    public void displayLeaderboard() throws IOException {
-        screen.clear();
-        textGraphics.putString(0, 0, "Loading data...");
-        screen.refresh();
+    private List<User> getGlobalUsers(){
         String raw;
-        List<User> users;
+        List<User> globalUsers;
         try{
             raw = getRawData();
-            users = parseJson(raw);
-            if (users != null){
-                users = users.stream()
-                        .sorted(
-                                // Difficulties are stored from Easy to Hard.
-                                // To sort them from Hard to Easy multiply by -1 them so Easy becomes bigger then Hard
-                                Comparator.comparingInt(
-                                    (User u) -> u.difficulty.ordinal()*-1
-                                )
-                                .thenComparingInt(u -> u.score*-1) // Descending score order
-                                .thenComparing(u -> u.time)).collect(Collectors.toList()); // Ascending time order
+
+            globalUsers = parseJson(raw);
+            if (globalUsers != null){
+                // Sort users and return them
+                return Utils.sortUsers(globalUsers);
             }
         }
         catch (Exception ignore){
             // Catch any exception because it will probably be an internet error
-            // Set users to null to display internet error
-            users = null;
+            // Return null to display internet error
+            return null;
         }
+        return null;
+    }
+
+    private List<User> getLocalUsers(){
+        String raw;
+        List<User> localUsers;
+        try{
+            raw = localLeaderboard.getRaw();
+
+            localUsers = parseJson(raw);
+            if (localUsers != null){
+                // Sort users and return them
+                return Utils.sortUsers(localUsers);
+            }
+        }
+        catch (Exception ignore){
+            // Catch any exception
+            // Return null to display internet error
+            return null;
+        }
+        return null;
+    }
+
+    public void displayLeaderboard() throws IOException {
+        screen.clear();
+        textGraphics.putString(0, 0, "Loading data...");
+        screen.refresh();
+        List<User> globalUsers = getGlobalUsers();
+        List<User> localUsers = getLocalUsers();
+        // uiShowingLocal, false if showing global leaderboard, true if showing local leaderboard
+        boolean uiShowingLocal = false;
+
+
         screen.clear();
 
         boolean running = true;
         while (running) {
             // Add logo
-            int x = Utils.getMaxStringLength(Constants.minesweeperLogo);
+            int x = Utils.getMaxStringLength(Constants.leaderboardLogo);
             int y = 1;
             for (String logoLine : Constants.leaderboardLogo) {
                 textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - x / 2, y, logoLine);
@@ -74,7 +101,12 @@ public class Leaderboard {
                 textGraphics.putString(screen.getTerminalSize().getColumns()-1, i, "#");
             }
             // Hide cursor
-            Utils.hideCursor(screen.getCursorPosition().getColumn(), screen.getCursorPosition().getRow(), textGraphics);
+            try{
+                Utils.hideCursor(screen.getCursorPosition().getColumn(), screen.getCursorPosition().getRow(), textGraphics);
+            }
+            catch (NullPointerException ignore){
+                // Sometimes screen.getCursorPosition().getColumn()/.getRow() returns null
+            }
 
             int width = 40;
             int height = 12;
@@ -83,25 +115,11 @@ public class Leaderboard {
 
             Utils.drawRect(x, y, width, height, textGraphics);
 
-            if (users == null){
-                String title = "Connection error";
-                textGraphics.putString(x+width/2-title.length()/2, y+height/2-1, title);
+            if (uiShowingLocal){
+                showLocalLeaderboard(localUsers, x, y, width, height);
             }
-            else{
-                String fs = "   " + String.format("%-" + 12 + "s%-" + 7 + "s%-" + 7 + "s%s", "Username", "Score", "Time", "Level");
-                textGraphics.putString(x+2, y+1, fs);
-                int n = 1;
-                for (User user : users){
-                    String formattedString = n + ") " + String.format("%-" + 12 + "s%-" + 7 + "d%-" + 7 + "s%s",
-                            user.username, user.score, user.time, Utils.toCamelCase(user.difficulty.name()));
-
-                    textGraphics.putString(x+2, y+n*2+1, formattedString);
-                    // Only show top 3 players
-                    if (n > 3){
-                        break;
-                    }
-                    n++;
-                }
+            else {
+                showGlobalLeaderboard(globalUsers, x, y, width, height);
             }
 
             screen.refresh();
@@ -109,8 +127,78 @@ public class Leaderboard {
             if (choice.getKeyType() == KeyType.Escape || choice.getKeyType() == KeyType.EOF) {
                 break;
             }
+            if (choice.getKeyType() == KeyType.Tab){
+                uiShowingLocal = !uiShowingLocal;
+            }
+            screen.clear();
         }
         screen.clear();
+    }
+
+    private void showGlobalLeaderboard(List<User> globalUsers, int x, int y, int width, int height){
+        String title = "Global Leaderboard";
+        textGraphics.putString(x+width/2-title.length()/2, y+1, title);
+        if (globalUsers == null){
+            String subtitle = "Connection error";
+            textGraphics.putString(x+width/2-subtitle.length()/2, y+height/2-1, subtitle);
+        }
+        else if (globalUsers.isEmpty()){
+            displayEmptyLeaderboardMessage(x, y);
+        }
+        else{
+            String fs = "   " + String.format("%-" + 12 + "s%-" + 7 + "s%-" + 7 + "s%s", "Username", "Score", "Time", "Level");
+            textGraphics.putString(x+2, y+2, fs);
+            int n = 1;
+
+            for (User user : globalUsers){
+                String formattedString = n + ") " + String.format("%-" + 12 + "s%-" + 7 + "d%-" + 7 + "s%s",
+                        user.username, user.score, user.time, Utils.toCamelCase(user.difficulty.name()));
+
+                textGraphics.putString(x+2, y+n*2+2, formattedString);
+                // Only show top 3 players
+                if (n > 3){
+                    break;
+                }
+                n++;
+            }
+        }
+    }
+
+    private void showLocalLeaderboard(List<User> localUsers, int x, int y, int width, int height){
+        String title = "Local Leaderboard";
+        textGraphics.putString(x+width/2-title.length()/2, y+1, title);
+        if (localUsers == null){
+            // This shouldn't happen
+            String subtitle = "Unexpected error";
+            textGraphics.putString(x+width/2-subtitle.length()/2, y+height/2-1, subtitle);
+        }
+        else if (localUsers.isEmpty()){
+            displayEmptyLeaderboardMessage(x, y);
+        }
+        else{
+            String fs = "   " + String.format("%-" + 12 + "s%-" + 7 + "s%-" + 7 + "s%s", "Username", "Score", "Time", "Level");
+            textGraphics.putString(x+2, y+2, fs);
+            int n = 1;
+
+            for (User user : localUsers){
+                String formattedString = n + ") " + String.format("%-" + 12 + "s%-" + 7 + "d%-" + 7 + "s%s",
+                        user.username, user.score, user.time, Utils.toCamelCase(user.difficulty.name()));
+
+                textGraphics.putString(x+2, y+n*2+2, formattedString);
+                // Only show top 3 players
+                if (n > 3){
+                    break;
+                }
+                n++;
+            }
+        }
+    }
+
+    private void displayEmptyLeaderboardMessage(int x, int y){
+        textGraphics.putString(x+2, y+3, "No one has won a game yet.");
+        textGraphics.putString(x+2, y+4, "Be the first!");
+        textGraphics.putString(x+2, y+5, "To play go to the main menu and click");
+        textGraphics.putString(x+2, y+6, "\"Play\"");
     }
 
     private static List<User> parseJson(String jsonString) {
@@ -175,12 +263,22 @@ public class Leaderboard {
         return "";
     }
 
-    public void sendPlayerDataAsync(User playerData){
-        // From: https://www.geeksforgeeks.org/completablefuture-in-java/
-        CompletableFuture.runAsync(() -> sendPlayerData(playerData));
+    public void sendPlayerDataAsync(User playerData) {
+        new Thread(() -> {
+            sendPlayerData(playerData);
+        }).start();
     }
 
+
     public void sendPlayerData(User playerData){
+        // First local leaderboard because it is faster
+        try{
+            localLeaderboard.addUser(playerData);
+        }
+        catch (Exception ignore){
+            // Should not happen but better to catch it
+        }
+        // Then to global leaderboard
         try{
             // URL of the API
             URL url = new URL(Constants.apiUrl+"/submit");

@@ -51,4 +51,5 @@ public class Constants {
     public static final String skinFile = "data/skin.dat";
     public static final String optionsFile = "data/options.json";
     public static String themeFile = "data/theme.dat";
+    public static String localLeaderboardFile = "data/local_leaderboard.json";
 }

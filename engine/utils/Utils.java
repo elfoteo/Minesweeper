@@ -3,10 +3,14 @@ package engine.utils;
 import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
+import engine.Leaderboard;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class Utils {
     /**
@@ -60,6 +64,36 @@ public class Utils {
     }
 
     /**
+     * Get RGB values for a shifting rainbow effect based on elapsed time and position.
+     *
+     * @param elapsedTime  The elapsed time in milliseconds.
+     * @param i            The position index for adjusting the effect individually.
+     * @return An array of RGB values representing the color.
+     */
+    public static int[] getRainbow(long elapsedTime, int i) {
+        // How rainbow effect works.
+        // We have a "hue" variable that is the angle as HSB works with an angle, saturation, lightness
+        // Rotating the angle
+        // and keeping constant the saturation and the brightness
+        // we can achieve a simple rainbow effect
+
+        // Calculate the hue based on elapsed time and position
+        float hue = (float) ((elapsedTime / 5000.0 - i * 0.05) % 360.0);
+
+        // Set saturation and brightness
+        // final because they don't get changed
+        final float saturation = 1F;
+        final float brightness = 1F;
+
+        // Create a Color object using HSB color model
+        Color c = Color.getHSBColor(hue, saturation, brightness);
+
+        // Extract RGB values from the Color object and return them
+        return new int[]{c.getRed(), c.getGreen(), c.getBlue()};
+    }
+
+
+    /**
      * Converts a given difficulty in to information
      *
      * @param difficulty The difficulty level of the Minesweeper game.
@@ -82,20 +116,45 @@ public class Utils {
 
     /**
      * Hides the cursor at the specified position on the screen.
-     *
-     * <p>The cursor is hidden by placing a character at the cursor position.
-     * This causes the cursor to invert the color, making it black and effectively hiding it.</p>
+     * The cursor is hidden by placing a character at the cursor position with inverted colors.
+     * This causes the cursor to invert the colors again, so the cursor is hidden.
      *
      * @param cursorX       The x-coordinate of the cursor position.
      * @param cursorY       The y-coordinate of the cursor position.
      * @param textGraphics  The TextGraphics object used for rendering on the screen.
      */
     public static void hideCursor(int cursorX, int cursorY, TextGraphics textGraphics) {
+        TextCharacter tc = textGraphics.getCharacter(cursorX, cursorY);
         textGraphics.setCharacter(
                 cursorX,
                 cursorY,
-                new TextCharacter(textGraphics.getCharacter(cursorX, cursorY).getCharacter(), TextColor.ANSI.BLACK, TextColor.ANSI.WHITE)
+                new TextCharacter(
+                        tc.getCharacter(),
+                        tc.getBackgroundColor(),
+                        tc.getForegroundColor())
         );
+    }
+
+    /**
+     * Sorts a list of Users based on difficulty, score, and time.
+     * Sorting order:
+     * 1. Difficulties are sorted from "Hard" to "Easy."
+     * 2. Scores are sorted in descending order (from highest to lowest).
+     * 3. Times are sorted in ascending order (from lowest to highest).
+     *
+     * @param users The list of Leaderboard.Users to be sorted.
+     * @return A new list containing the sorted Leaderboard.Users.
+     */
+    public static java.util.List<Leaderboard.User> sortUsers(List<Leaderboard.User> users){
+        return users.stream()
+                .sorted(
+                        // Difficulties are stored from Easy to Hard.
+                        // To sort them from "Hard" to "Easy" multiply by -1 them so "Easy" becomes bigger than "Hard"
+                        Comparator.comparingInt(
+                                        (Leaderboard.User u) -> u.difficulty().ordinal()*-1
+                                )
+                                .thenComparingInt(u -> u.score()*-1) // Descending score order
+                                .thenComparing(Leaderboard.User::time)).collect(Collectors.toList()); // Ascending time order
     }
 
     public static TextColor ColorToTextColor(Color color){

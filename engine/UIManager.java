@@ -7,6 +7,10 @@ import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.SimpleTheme;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.gui2.*;
+import com.googlecode.lanterna.gui2.Button;
+import com.googlecode.lanterna.gui2.Label;
+import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
@@ -20,11 +24,9 @@ import engine.skins.impl.DefaultSkin;
 import engine.themes.IGameTheme;
 import engine.themes.ThemeManager;
 import engine.themes.impl.DefaultGameTheme;
-import engine.utils.Constants;
-import engine.utils.GameInstance;
-import engine.utils.MinesweeperDifficulty;
-import engine.utils.Utils;
+import engine.utils.*;
 
+import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -124,6 +126,10 @@ public class UIManager {
     public void applyThemeColors(TextGraphics textGraphics){
         textGraphics.setForegroundColor(selectedTheme.getForegroundColor());
         textGraphics.setBackgroundColor(selectedTheme.getBackgroundColor());
+    }
+
+    public TextColor getThemeBackgroundColor() {
+        return selectedTheme.getBackgroundColor();
     }
 
     public boolean showDataCollectionWarning() throws IOException {
@@ -606,42 +612,97 @@ public class UIManager {
     }
 
     public void showAboutMenu() throws IOException {
+        boolean[] running = new boolean[]{true};
+        boolean[] rgbEnabled = new boolean[]{true};
         screen.clear();
-        // Hide cursor
         Utils.hideCursor(0, 0, textGraphics);
-        applyThemeColors(textGraphics);
-        // Center the "About" title
-        String title = "About";
-        textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - title.length() / 2, 0, title);
 
-        // Display information about the game and the developer
-        textGraphics.putString(0, 2, "Welcome to Minesweeper, a console-based game.");
-        textGraphics.putString(0, 3, "This game was coded by Matteo Ciocci as a school project.");
+        String aboutText =
+                "About\n" +
+                        "Welcome to Minesweeper, a console-based game.\n" +
+                        "This game was coded by Matteo Ciocci as a school project.\n" +
+                        "\n" +
+                        "How to navigate menus:\n" +
+                        " - Use the arrow keys to move up and down.\n" +
+                        " - Press the Enter key to choose an option.\n" +
+                        " - To exit a menu, press Escape.\n" +
+                        "\n" +
+                        "How to play:\n" +
+                        " - Navigate the grid with the 4 arrow keys.\n" +
+                        " - Press Enter to uncover a cell.\n" +
+                        " - Press \"F\" to flag a cell.";
 
-        // Instructions on how to navigate menus
-        textGraphics.putString(0, 5, "How to navigate menus:");
-        textGraphics.putString(0, 6, " - Use the arrow keys to move up and down.");
-        textGraphics.putString(0, 7, " - Press the Enter key to choose an option.");
-        textGraphics.putString(0, 8, " - To exit a menu, press Escape.");
+        long startTime = System.currentTimeMillis();
+        new Thread(() -> {
+            while (running[0]) {
+                KeyStroke choice = null;
+                try {
+                    choice = screen.readInput();
+                } catch (IOException ignored) {
+                }
+                if (choice != null) {
+                    if (choice.getKeyType() == KeyType.EOF || choice.getKeyType() == KeyType.Escape) {
+                        running[0] = false;
+                    } else if (choice.getKeyType() == KeyType.Character) {
+                        if (choice.getCharacter().toString().equalsIgnoreCase("f")){
+                            rgbEnabled[0] = !rgbEnabled[0];
+                        }
 
-        // How to start
-        textGraphics.putString(0, 10, "How to start:");
-        textGraphics.putString(0, 11, " - Navigate the grid with the 4 arrow keys.");
-        textGraphics.putString(0, 12, " - Press Enter to uncover a cell.");
-        textGraphics.putString(0, 13, " - Press \"F\" to flag a cell.");
+                    }
+                }
+            }
 
-        // Display the information
-        screen.refresh();
+        }).start();
 
-        // Wait for the Escape key to be pressed to exit
-        while (true) {
-            KeyStroke choice = screen.readInput();
-            if (choice.getKeyType() == KeyType.Escape) {
-                break;
+        while (running[0]) {
+            long currentTime = System.currentTimeMillis();
+            long elapsedTime = currentTime - startTime;
+            int offsetY = 0;
+            int offsetX = 0;
+            if (rgbEnabled[0]){
+                textGraphics.enableModifiers(SGR.BOLD);
+                for (int i = 0; i < aboutText.length(); i++) {
+                    int[] rgb = Utils.getRainbow(elapsedTime, i);
+
+                    textGraphics.setForegroundColor(new TextColor.RGB(rgb[0], rgb[1], rgb[2]));
+
+                    textGraphics.putString(offsetX, offsetY, String.valueOf(aboutText.charAt(i)));
+                    offsetX++;
+                    if (aboutText.charAt(i) == '\n'){
+                        offsetY++;
+                        offsetX = 0;
+                    }
+                }
+            }
+            else {
+                for (String line : aboutText.split("\n")){
+                    textGraphics.putString(0, offsetY, line);
+                    offsetY++;
+                }
+            }
+            textGraphics.disableModifiers(SGR.BOLD);
+            textGraphics.setForegroundColor(TextColor.ANSI.WHITE);
+            textGraphics.putString(0, screen.getTerminalSize().getRows()-1, "Press \"F\" to enable or disable rgb");
+            screen.refresh();
+
+            try {
+                // RGB needs a higher frame-rate, a static text doesn't need lots of updates
+                if (rgbEnabled[0]){
+                    Thread.sleep(30);
+                }
+                else {
+                    Thread.sleep(200);
+                }
+
+            } catch (InterruptedException ignored) {
+
             }
         }
         screen.clear();
     }
+
+
+
 
     private void showOptions() throws IOException {
         screen.clear();

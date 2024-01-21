@@ -250,7 +250,7 @@ public class Minesweeper {
         // loop the 8 adjacent cells
         for (int i = x - 1; i <= x + 1; i++) {
             for (int j = y - 1; j <= y + 1; j++) {
-                if ((i != x || j != y) && isCellHighlighted(i, j)) {
+                if ((i != x || j != y) && (isCellHighlighted(i, j) || (isMine(i, j) && isUncovered(i, j)))) {
                     num++;
                 }
             }

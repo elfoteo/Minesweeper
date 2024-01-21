@@ -17,6 +17,7 @@ javac -d out engine/utils/CellType.java
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/utils/Utils.java
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/utils/Constants.java
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/utils/Cell.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/utils/LocalLeaderboardAPI.java
 
 :: Options
 javac -d out engine/options/OptionsInstance.java
@@ -36,7 +37,6 @@ javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/IGameTheme.jav
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/impl/DefaultGameTheme.java
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/impl/PurpleGameTheme.java
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/impl/LimeGameTheme.java
-javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/impl/WhiteGameTheme.java
 :: Engine
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/Leaderboard.java
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/Minesweeper.java

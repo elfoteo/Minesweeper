@@ -21,10 +21,7 @@ public class HeartsSkin implements ISkin, Serializable {
             case NUMBER -> {
                 return cell.getNumberAsChar();
             }
-            case MINE -> {
-                return '*';
-            }
-            case HIDDEN -> {
+            case MINE, HIDDEN -> {
                 return '\u2665';
             }
         }
