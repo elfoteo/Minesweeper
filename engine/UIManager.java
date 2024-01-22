@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
@@ -53,6 +54,7 @@ public class UIManager {
     private final OptionsInstance options;
     private MenuPopupWindow themesMenuWindow;
     private RadioBoxList<String> themesMenuRadioboxList;
+    private final List<Window.Hint> hints = new ArrayList<>();
     public UIManager(Terminal terminal) throws IOException {
         this.terminal = terminal;
 
@@ -63,6 +65,10 @@ public class UIManager {
         BasicWindow mainWindow = new BasicWindow();
         mainPanel = new Panel();
         mainWindow.setComponent(mainPanel);
+        hints.add(Window.Hint.CENTERED);
+        hints.add(Window.Hint.FIT_TERMINAL_WINDOW);
+
+        mainWindow.setHints(hints);
 
         gui.addWindow(mainWindow);
 
@@ -111,12 +117,16 @@ public class UIManager {
         return new SimpleTheme(selectedTheme.getForegroundColor(), selectedTheme.getBackgroundColor());
     }
 
+    public void centerWindow(Window window){
+        window.setHints(hints);
+    }
+
     public SimpleTheme getConfirmButtonTheme(){
         return new SimpleTheme(TextColor.ANSI.GREEN, selectedTheme.getBackgroundColor(), SGR.BOLD);
     }
 
     public SimpleTheme getWarningButtonTheme(){
-        return new SimpleTheme(Constants.warningColor, selectedTheme.getBackgroundColor(), SGR.BOLD);
+        return new SimpleTheme(new TextColor.RGB(235, 144, 52), selectedTheme.getBackgroundColor(), SGR.BOLD);
     }
 
     public SimpleTheme getCancelButtonTheme(){
@@ -130,6 +140,10 @@ public class UIManager {
 
     public TextColor getThemeBackgroundColor() {
         return selectedTheme.getBackgroundColor();
+    }
+
+    public IGameTheme getTheme(){
+        return selectedTheme;
     }
 
     public boolean showDataCollectionWarning() throws IOException {
@@ -434,12 +448,12 @@ public class UIManager {
         }
     }
 
-    private void showThemesMenu() throws IOException {
+    private void showThemesMenu() {
         screen.clear();
         themesMenuWindow = new MenuPopupWindow(mainPanel);
         themesMenuWindow.setTheme(getWindowTheme());
         Panel container = new Panel();
-        container.addComponent(new Label("Skins"));
+        container.addComponent(new Label("Themes"));
 
         // Username settings
         container.addComponent(new EmptySpace(new TerminalSize(1, 1))); // Add some space
@@ -457,12 +471,7 @@ public class UIManager {
 
 
         themesMenuWindow.setComponent(container);
-        // Center the window
-        themesMenuWindow.setPosition(
-                new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - 10,
-                        terminal.getTerminalSize().getRows() / 2 - 10
-                )
-        );
+        centerWindow(themesMenuWindow);
 
         gui.addWindowAndWait(themesMenuWindow);
         // The user exited the menu
@@ -503,12 +512,7 @@ public class UIManager {
 
 
         window.setComponent(container);
-        // Center the window
-        window.setPosition(
-            new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - 10,
-                    terminal.getTerminalSize().getRows() / 2 - 10
-            )
-        );
+        centerWindow(window);
 
         gui.addWindowAndWait(window);
         // The user exited the menu
@@ -598,16 +602,9 @@ public class UIManager {
         panel.addComponent(textBox);
         panel.addComponent(buttonsPanel);
 
-        try {
-            window.setComponent(panel);
-            // Center the window
-            window.setPosition(new TerminalPosition(
-                    terminal.getTerminalSize().getColumns() / 2 - Utils.getMaxStringLength(message.split("\n")) / 2,
-                    terminal.getTerminalSize().getRows() / 2 - 4));
-            gui.addWindowAndWait(window);
-        } catch (IOException ignore) {
-            // Ignore exception
-        }
+        window.setComponent(panel);
+        centerWindow(window);
+        gui.addWindowAndWait(window);
         return continuePressed[0];
     }
 
@@ -643,11 +640,8 @@ public class UIManager {
                 if (choice != null) {
                     if (choice.getKeyType() == KeyType.EOF || choice.getKeyType() == KeyType.Escape) {
                         running[0] = false;
-                    } else if (choice.getKeyType() == KeyType.Character) {
-                        if (choice.getCharacter().toString().equalsIgnoreCase("f")){
-                            rgbEnabled[0] = !rgbEnabled[0];
-                        }
-
+                    } else if (choice.getKeyType() == KeyType.Tab) {
+                        rgbEnabled[0] = !rgbEnabled[0];
                     }
                 }
             }
@@ -682,7 +676,7 @@ public class UIManager {
             }
             textGraphics.disableModifiers(SGR.BOLD);
             textGraphics.setForegroundColor(TextColor.ANSI.WHITE);
-            textGraphics.putString(0, screen.getTerminalSize().getRows()-1, "Press \"F\" to enable or disable rgb");
+            textGraphics.putString(0, screen.getTerminalSize().getRows()-1, "Press \"Tab\" to toggle rgb");
             screen.refresh();
 
             try {
@@ -718,16 +712,12 @@ public class UIManager {
         // usernameSpace is used to keep the space between currentUsernameLabel and changeUsernameButton the same
         EmptySpace usernameSpace = new EmptySpace(new TerminalSize(15-currentUsernameLabel.getText().length(), 1));
         Button chageUsernameButton = new Button("Change", () -> {
-            try {
-                // Force to show the username popup
-                if (getUsername(true) != null){
-                    currentUsernameLabel.setText(String.format("\"%s\"", getUsername()));
-                    // On username update, update the optionsInstance too
-                    options.setUsername(getUsername());
-                    usernameSpace.setPreferredSize(new TerminalSize(15-currentUsernameLabel.getText().length(), 1));
-                }
-            } catch (IOException ignore) {
-
+            // Force to show the username popup
+            if (getUsername(true) != null){
+                currentUsernameLabel.setText(String.format("\"%s\"", getUsername()));
+                // On username update, update the optionsInstance too
+                options.setUsername(getUsername());
+                usernameSpace.setPreferredSize(new TerminalSize(15-currentUsernameLabel.getText().length(), 1));
             }
         });
 
@@ -750,11 +740,7 @@ public class UIManager {
 
 
         window.setComponent(container);
-        window.setPosition(
-                new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - 18,
-                        terminal.getTerminalSize().getRows() / 2 - 6
-                )
-        );
+        centerWindow(window);
         gui.addWindowAndWait(window);
         options.setGrayOutNearbyCells(grayNearbyCells.isChecked(0));
         screen.clear();
@@ -764,9 +750,8 @@ public class UIManager {
      * Displays a menu for the user to select the game difficulty.
      *
      * @return The selected Minesweeper difficulty. Returns {@code null} if the user cancels the action.
-     * @throws IOException If an I/O error occurs while interacting with the user interface.
      */
-    private MinesweeperDifficulty getDifficulty() throws IOException {
+    private MinesweeperDifficulty getDifficulty() {
         final MinesweeperDifficulty[] selectedDifficulty = {MinesweeperDifficulty.MEDIUM};
         MenuPopupWindow window = new MenuPopupWindow(mainPanel);
         Panel container = new Panel();
@@ -798,9 +783,7 @@ public class UIManager {
         container.addComponent(cancelButton);
 
         window.setComponent(container);
-        window.setPosition(new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - 15,
-                terminal.getTerminalSize().getRows() / 2 - 4));
-
+        centerWindow(window);
         gui.addWindowAndWait(window);
         return selectedDifficulty[0];
     }
@@ -814,17 +797,11 @@ public class UIManager {
         okButton.setPreferredSize(new TerminalSize(4, 1));
         okButton.setTheme(getConfirmButtonTheme());
         popupContainer.addComponent(okButton);
-        try {
-            popupWindow.setComponent(popupContainer);
-            popupWindow.setPosition(new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - message.length()/2,
-                    terminal.getTerminalSize().getRows() / 2 - 4));
-            gui.addWindowAndWait(popupWindow);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        popupWindow.setComponent(popupContainer);
+        centerWindow(popupWindow);
     }
 
-    private String getUsername() throws IOException {
+    private String getUsername() {
         return getUsername(false);
     }
     /**
@@ -838,7 +815,7 @@ public class UIManager {
      * @return The entered username. Returns {@code null} if the user cancels the action or an I/O error occurs.
      * @throws IOException If an I/O error occurs while interacting with the user interface.
      */
-    private String getUsername(boolean force) throws IOException {
+    private String getUsername(boolean force) {
         final String[] username = {""};
         if (!Objects.equals(options.getUsername(), "null") && !force){
             return options.getUsername();
@@ -878,8 +855,7 @@ public class UIManager {
         container.addComponent(buttonsPanel);
 
         window.setComponent(container);
-        window.setPosition(new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - 12,
-                terminal.getTerminalSize().getRows() / 2 - 4));
+        centerWindow(window);
         gui.addWindowAndWait(window);
         return username[0];
     }

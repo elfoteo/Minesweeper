@@ -1,13 +1,12 @@
 package engine.themes.impl;
 
 import com.googlecode.lanterna.TextColor;
-import engine.themes.IGameTheme;
+import engine.themes.BaseGameTheme;
 import engine.utils.Utils;
 
 import java.awt.*;
-import java.io.Serializable;
 
-public class DefaultGameTheme implements IGameTheme, Serializable {
+public class DefaultGameTheme extends BaseGameTheme {
     private final Color foregroundColor = Utils.TextColorToAwtColor(TextColor.ANSI.WHITE);
     private final Color backgroundColor = Utils.TextColorToAwtColor(TextColor.ANSI.DEFAULT);
 
@@ -19,10 +18,5 @@ public class DefaultGameTheme implements IGameTheme, Serializable {
     @Override
     public TextColor getBackgroundColor() {
         return Utils.ColorToTextColor(backgroundColor);
-    }
-
-    @Override
-    public String getThemeName() {
-        return "Default";
     }
 }

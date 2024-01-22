@@ -34,9 +34,11 @@ javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/skins/impl/MysterySki
 :: Themes
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/ThemeManager.java
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/IGameTheme.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/BaseGameTheme.java
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/impl/DefaultGameTheme.java
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/impl/PurpleGameTheme.java
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/impl/LimeGameTheme.java
+javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/themes/impl/AzureGameTheme.java
 :: Engine
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/Leaderboard.java
 javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar engine/Minesweeper.java
@@ -48,11 +50,11 @@ javac -d out -cp .;lanterna-3.1.1.jar;json-java.jar Program.java
 
 :: Old version (javaw)
 :: The main program needs to be executed with all the jars else it won't work
-:: javaw -cp .;lanterna-3.1.1.jar;json-java.jar;out Program
+javaw -cp .;lanterna-3.1.1.jar;json-java.jar;out Program
 
 :: New version (jar)
 :: Create a JAR file
-jar cfm Minesweeper.jar Manifest.txt -C out .
+::jar cfm Minesweeper.jar Manifest.txt -C out .
 
 :: Run the program using the JAR file
-javaw -jar Minesweeper.jar
+::javaw -jar Minesweeper.jar

@@ -7,7 +7,7 @@ import com.googlecode.lanterna.graphics.StyleSet;
 import java.util.EnumSet;
 
 public class Constants {
-    public static final TextColor warningColor = new TextColor.RGB(235, 128, 52);
+    public static final TextColor cellHighlightColor = new TextColor.RGB(235, 128, 52);
     public static final TextColor dangerColor = new TextColor.RGB(200, 10, 13);
     public static final String[] minesweeperLogo = """
  __  __ _                                                  \s

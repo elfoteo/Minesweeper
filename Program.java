@@ -1,4 +1,5 @@
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
+import com.googlecode.lanterna.terminal.MouseCaptureMode;
 import com.googlecode.lanterna.terminal.Terminal;
 import engine.UIManager;
 import engine.skins.SkinManager;
@@ -18,7 +19,11 @@ public class Program {
     public static void main(String[] args) throws IOException {
         Terminal terminal;
         try{
-			terminal = new DefaultTerminalFactory().createTerminal();
+			// Create factory
+			DefaultTerminalFactory factory = new DefaultTerminalFactory();
+			factory.setTerminalEmulatorTitle("Minesweeper");
+			// Create terminal
+			terminal = factory.createTerminal();
 			terminal.enterPrivateMode();
 
 			// Register the skins
@@ -33,7 +38,7 @@ public class Program {
 			String crashReport = Utils.exceptionToString(ex);
 
 			// Show the crash report in a message box
-			Utils.Debug(crashReport.toString());
+			Utils.Debug(crashReport);
 			return; // Immediately stop the program
 		}
 

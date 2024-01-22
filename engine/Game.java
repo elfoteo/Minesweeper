@@ -12,6 +12,7 @@ import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.terminal.Terminal;
+import engine.themes.IGameTheme;
 import engine.utils.*;
 
 import java.awt.*;
@@ -22,12 +23,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The {@code Game} class represents a Minesweeper game instance. It encapsulates the logic
+ * The {@code Game} class represents a Minesweeper game instance. It has the logic
  * for playing the Minesweeper game and handles user interactions.
- * <p>
- * The class provides methods for starting and managing Minesweeper games, handling input events,
- * updating the timer, and displaying popup windows.
- * </p>
  *
  * @version 1.0
  * @since 2024-01-14
@@ -55,9 +52,9 @@ public class Game {
     /**
      * Starts a Minesweeper game with the specified username and difficulty level.
      *
-     * <p>The method initializes and starts a Minesweeper game for the provided username and difficulty level.
+     * The method initializes and starts a Minesweeper game for the provided username and difficulty level.
      * It returns a boolean indicating whether the player wants to play again after completing the session.
-     * If an I/O error occurs during the gameplay or user interaction, it is thrown as an IOException.</p>
+     * If an I/O error occurs during the gameplay or user interaction, it is thrown as an IOException.
      *
      * @param username      The username of the player.
      * @param difficulty    The difficulty level of the Minesweeper game.
@@ -72,6 +69,7 @@ public class Game {
         // Prepare game
         GameInstance gameInstance = new GameInstance(screen, difficulty);
         Minesweeper minesweeper = gameInstance.getMinesweeper();
+        IGameTheme gameTheme = uiManager.getTheme();
         // Start timer
         startTime = System.currentTimeMillis();
         timer = Executors.newSingleThreadScheduledExecutor();
@@ -92,8 +90,8 @@ public class Game {
             screen.setCursorPosition(new TerminalPosition(gameInstance.getCursor()[0], gameInstance.getCursor()[1]));
 
             field = minesweeper.getFieldAsString().split("\n");
-            textGraphics.setBackgroundColor(TextColor.ANSI.DEFAULT);
-            textGraphics.setForegroundColor(TextColor.ANSI.WHITE);
+            textGraphics.setForegroundColor(gameTheme.getMinefieldFore());
+            textGraphics.setBackgroundColor(gameTheme.getMinefieldBack());
             int centerX = screen.getTerminalSize().getColumns() / 2 - Utils.getMaxStringLength(field) / 2;
             int centerY = screen.getTerminalSize().getRows() / 2 - field.length / 2;
             int offsetX = 0;
@@ -105,7 +103,7 @@ public class Game {
 
                     if (minesweeper.isCellHighlighted(col, row)) {
                         // Highlight the cell if needed
-                        textGraphics.setForegroundColor(Constants.warningColor);
+                        textGraphics.setForegroundColor(Constants.cellHighlightColor);
                         cellContent = String.valueOf(minesweeper.getCell(col, row, true).getChar());
                     } else if (minesweeper.isUncovered(col, row) && cell.type == CellType.NUMBER) {
                         // Color cell numbers
@@ -114,13 +112,14 @@ public class Game {
                         // Set color based on conditions
                         if (number == minesweeper.getNumbersOfFlaggedCells(col, row) && uiManager.getOptions().isGrayOutNearbyCells()) {
                             // Give a hint only if the options allow it
-                            textGraphics.setForegroundColor(getWarningColor(number, 0.2));
+                            textGraphics.setForegroundColor(gameTheme.getWarningColor(number, true));
                         } else {
-                            textGraphics.setForegroundColor(getWarningColor(number));
+                            textGraphics.setForegroundColor(gameTheme.getWarningColor(number, false));
                         }
                     }
                     else{
-                        textGraphics.setForegroundColor(TextColor.ANSI.DEFAULT);
+                        textGraphics.setForegroundColor(gameTheme.getMinefieldFore());
+                        textGraphics.setBackgroundColor(gameTheme.getMinefieldBack());
                     }
                     // Can happen if the player decides to continue the game, loosing score
                     if (cell.type == CellType.MINE){
@@ -172,43 +171,6 @@ public class Game {
         screen.clear();
         return gameInstance.getPlayAgain();
     }
-
-    /**
-     * Generates a warning color for a warning level.
-     * The warning color ranges from green to red, with higher warning levels indicating
-     * a more dangerous state.
-     *
-     * @param warningLevel The warning level (1 to 8) representing the severity.
-     * @return A TextColor representing the warning color.
-     */
-    public static TextColor getWarningColor(int warningLevel) {
-        if (warningLevel > 8){
-            throw new IllegalArgumentException("The cell warning level is higher then 8, range is from 1 to 8");
-        }
-        else if (warningLevel < 1){
-            throw new IllegalArgumentException("The cell warning  level is smaller then 1, range is from 1 to 8");
-        }
-        // *0.8 to desaturate
-        int red = (int) Utils.normalize((warningLevel * 50) * 0.8, 0, 255);
-        int green = (int) Utils.normalize((255 - (warningLevel - 1) * 45) * 0.8, 0, 255);
-
-        return new TextColor.RGB(red, green, 50);
-    }
-
-    public static TextColor getWarningColor(int warningLevel, double saturation) {
-        if (warningLevel > 8){
-            throw new IllegalArgumentException("The cell warning level is higher then 8, range is from 1 to 8");
-        }
-        else if (warningLevel < 1){
-            throw new IllegalArgumentException("The cell warning  level is smaller then 1, range is from 1 to 8");
-        }
-        // *saturation to saturate or desaturate
-        int red = (int) Utils.normalize((warningLevel * 50) * saturation, 0, 255);
-        int green = (int) Utils.normalize((255 - (warningLevel - 1) * 45) * saturation, 0, 255);
-
-        return new TextColor.RGB(red, green, (int) (50 * saturation));
-    }
-
 
     private void handleArrowMovement(GameInstance gameInstance, Rectangle bounds, int deltaY, int deltaX) {
         if (bounds.contains(gameInstance.getCursor()[0] + deltaX, gameInstance.getCursor()[1] + deltaY)) {
@@ -438,7 +400,7 @@ public class Game {
 
         try {
             popupWindow.setComponent(popupContainer);
-            popupWindow.setPosition(new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - warningMessage.length() / 2,
+            popupWindow.setPosition(new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - (Utils.getMaxStringLength(warningMessage.split("\n"))+2) / 2,
                     terminal.getTerminalSize().getRows() / 2 - 4));
             gui.addWindowAndWait(popupWindow);
         } catch (IOException ignore) {

@@ -9,4 +9,8 @@ public interface IGameTheme extends Serializable {
 
     TextColor getBackgroundColor();
     String getThemeName();
+
+    TextColor getMinefieldFore();
+    TextColor getMinefieldBack();
+    TextColor getWarningColor(int warningLevel, boolean grayedOut);
 }

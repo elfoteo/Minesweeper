@@ -100,6 +100,8 @@ public class Leaderboard {
                 textGraphics.putString(0, i, "#");
                 textGraphics.putString(screen.getTerminalSize().getColumns()-1, i, "#");
             }
+            // Add helper text
+            textGraphics.putString(1, screen.getTerminalSize().getRows()-2, "Use Tab to toggle between Local and Global leaderboards");
             // Hide cursor
             try{
                 Utils.hideCursor(screen.getCursorPosition().getColumn(), screen.getCursorPosition().getRow(), textGraphics);
@@ -296,10 +298,10 @@ public class Leaderboard {
     /**
      * Sends player data to the specified API using HTTP POST.
      *
-     * @param url        The URL of the API endpoint.
-     * @param playerData The player data to be sent.
-     * @return           The HttpURLConnection object representing the connection to the API.
-     * @throws IOException If an I/O exception occurs while making the connection.
+     * @param url           The URL of the API endpoint.
+     * @param playerData    The player data to be sent.
+     * @return              The HttpURLConnection object representing the connection to the API.
+     * @throws IOException  If an I/O exception occurs while making the connection.
      */
     private static HttpURLConnection sendPlayerDataToAPI(URL url, User playerData) throws IOException {
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();

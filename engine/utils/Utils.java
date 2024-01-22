@@ -135,6 +135,19 @@ public class Utils {
         );
     }
 
+    public static Color calculateGradientColor(Color color1, Color color2, Color color3, double percentage) {
+        // Ensure percentage is within the valid range [0, 1]
+        percentage = Math.max(0, Math.min(1, percentage));
+
+        // Calculate the individual components of the resulting color
+        int red = (int) (color1.getRed() + percentage * (color2.getRed() - color1.getRed()) + percentage * (color3.getRed() - color2.getRed()));
+        int green = (int) (color1.getGreen() + percentage * (color2.getGreen() - color1.getGreen()) + percentage * (color3.getGreen() - color2.getGreen()));
+        int blue = (int) (color1.getBlue() + percentage * (color2.getBlue() - color1.getBlue()) + percentage * (color3.getBlue() - color2.getBlue()));
+
+        // Create and return the resulting color
+        return new Color(red, green, blue);
+    }
+
     /**
      * Sorts a list of Users based on difficulty, score, and time.
      * Sorting order:

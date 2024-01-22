@@ -1,13 +1,12 @@
 package engine.themes.impl;
 
 import com.googlecode.lanterna.TextColor;
-import engine.themes.IGameTheme;
+import engine.themes.BaseGameTheme;
 import engine.utils.Utils;
 
 import java.awt.*;
-import java.io.Serializable;
 
-public class AzureGameTheme implements IGameTheme, Serializable {
+public class AzureGameTheme extends BaseGameTheme {
     private final Color foregroundColor = Utils.TextColorToAwtColor(new TextColor.RGB(0, 255, 234));
     private final Color backgroundColor = Utils.TextColorToAwtColor(TextColor.ANSI.DEFAULT);
 
@@ -25,4 +24,5 @@ public class AzureGameTheme implements IGameTheme, Serializable {
     public String getThemeName() {
         return "Azure";
     }
+
 }
