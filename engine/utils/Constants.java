@@ -40,16 +40,31 @@ public class Constants {
     public static final String creatorText = "Game made by *Matteo Ciocci*";
     public static final StyleSet<StyleSet.Set> blinkStyle = (new StyleSet.Set()).setModifiers(EnumSet.of(SGR.BLINK));
     public static final String apiUrl = "https://minesweeperapi.cyclic.app/";
-    public static final String dataCollectionWarning = "By playing this game, you agree that your game data, including:\n" +
-            " - username\n" +
-            " - score\n" +
-            " - game time\n" +
-            "may be sent to the leaderboard for competition purposes.\n" +
-            "Your privacy is important for us, and your data will be handled securely.";
+    public static final String dataCollectionWarning = """
+ By playing this game, you agree that your game data, including:
+ - username
+ - score
+ - game time
+may be sent to the leaderboard for competition purposes.
+Your privacy is important for us, and your data will be handled securely.""";
+    public static final String aboutText = """
+About
+Welcome to Minesweeper, a console-based game.
+This game was coded by Matteo Ciocci as a school project.
+
+How to navigate menus:
+ - Use the arrow keys to move up and down.
+ - Press the Enter key to choose an option.
+ - To exit a menu, press Escape.
+
+How to play:
+ - Navigate the grid with the 4 arrow keys.
+ - Press Enter to uncover a cell.
+ - Press "F" to flag a cell.""";
+
     public static final String dataCollectionAcceptedFile = "data/data_collection.txt";
-    public static final String usernameFile = "data/username.txt";
     public static final String skinFile = "data/skin.dat";
     public static final String optionsFile = "data/options.json";
-    public static String themeFile = "data/theme.dat";
-    public static String localLeaderboardFile = "data/local_leaderboard.json";
+    public static final String themeFile = "data/theme.dat";
+    public static final String localLeaderboardFile = "data/local_leaderboard.json";
 }

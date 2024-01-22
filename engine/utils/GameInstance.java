@@ -99,10 +99,6 @@ public class GameInstance{
         return gameBounds;
     }
 
-    public void setGameBounds(Rectangle gameBounds) {
-        this.gameBounds = gameBounds;
-    }
-
     public int getRespawnTimes() {
         return respawnTimes;
     }

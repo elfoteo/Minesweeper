@@ -51,7 +51,6 @@ public class Game {
 
     /**
      * Starts a Minesweeper game with the specified username and difficulty level.
-     *
      * The method initializes and starts a Minesweeper game for the provided username and difficulty level.
      * It returns a boolean indicating whether the player wants to play again after completing the session.
      * If an I/O error occurs during the gameplay or user interaction, it is thrown as an IOException.
@@ -313,7 +312,6 @@ public class Game {
 
     private void handleEOFOrEscape(KeyStroke choice, GameInstance gameInstance) {
         if (choice.getKeyType() == KeyType.Escape) {
-            // TODO: Implement a pause menu
             showPauseMenu(gameInstance);
         } else {
             gameInstance.setRunning(false);

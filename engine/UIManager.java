@@ -26,7 +26,6 @@ import engine.themes.ThemeManager;
 import engine.themes.impl.DefaultGameTheme;
 import engine.utils.*;
 
-import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,12 +60,15 @@ public class UIManager {
         screen = new TerminalScreen(terminal);
         textGraphics = screen.newTextGraphics();
         leaderboard = new Leaderboard(screen, textGraphics);
-        gui = new MultiWindowTextGUI(screen, TextColor.ANSI.BLACK);
+        Panel guiBackground = new Panel();
+        guiBackground.setTheme(getWindowTheme());
+        gui = new MultiWindowTextGUI(screen, new DefaultWindowManager(), guiBackground);
+
         BasicWindow mainWindow = new BasicWindow();
         mainPanel = new Panel();
         mainWindow.setComponent(mainPanel);
         hints.add(Window.Hint.CENTERED);
-        hints.add(Window.Hint.FIT_TERMINAL_WINDOW);
+        hints.add(Window.Hint.MENU_POPUP);
 
         mainWindow.setHints(hints);
 
@@ -443,8 +445,8 @@ public class UIManager {
             }
             themesMenuWindow.setTheme(getWindowTheme());
         }
-        catch (Exception ex){
-
+        catch (Exception ignored){
+            // This is a secondary update theme thread, any exceptions can be safely ignored
         }
     }
 
@@ -489,7 +491,7 @@ public class UIManager {
         screen.clear();
     }
 
-    private void showSkinsMenu() throws IOException {
+    private void showSkinsMenu() {
         screen.clear();
         MenuPopupWindow window = new MenuPopupWindow(mainPanel);
         window.setTheme(getWindowTheme());
@@ -614,21 +616,6 @@ public class UIManager {
         screen.clear();
         Utils.hideCursor(0, 0, textGraphics);
 
-        String aboutText =
-                "About\n" +
-                        "Welcome to Minesweeper, a console-based game.\n" +
-                        "This game was coded by Matteo Ciocci as a school project.\n" +
-                        "\n" +
-                        "How to navigate menus:\n" +
-                        " - Use the arrow keys to move up and down.\n" +
-                        " - Press the Enter key to choose an option.\n" +
-                        " - To exit a menu, press Escape.\n" +
-                        "\n" +
-                        "How to play:\n" +
-                        " - Navigate the grid with the 4 arrow keys.\n" +
-                        " - Press Enter to uncover a cell.\n" +
-                        " - Press \"F\" to flag a cell.";
-
         long startTime = System.currentTimeMillis();
         new Thread(() -> {
             while (running[0]) {
@@ -655,21 +642,21 @@ public class UIManager {
             int offsetX = 0;
             if (rgbEnabled[0]){
                 textGraphics.enableModifiers(SGR.BOLD);
-                for (int i = 0; i < aboutText.length(); i++) {
+                for (int i = 0; i < Constants.aboutText.length(); i++) {
                     int[] rgb = Utils.getRainbow(elapsedTime, i);
 
                     textGraphics.setForegroundColor(new TextColor.RGB(rgb[0], rgb[1], rgb[2]));
 
-                    textGraphics.putString(offsetX, offsetY, String.valueOf(aboutText.charAt(i)));
+                    textGraphics.putString(offsetX, offsetY, String.valueOf(Constants.aboutText.charAt(i)));
                     offsetX++;
-                    if (aboutText.charAt(i) == '\n'){
+                    if (Constants.aboutText.charAt(i) == '\n'){
                         offsetY++;
                         offsetX = 0;
                     }
                 }
             }
             else {
-                for (String line : aboutText.split("\n")){
+                for (String line : Constants.aboutText.split("\n")){
                     textGraphics.putString(0, offsetY, line);
                     offsetY++;
                 }
@@ -679,26 +666,28 @@ public class UIManager {
             textGraphics.putString(0, screen.getTerminalSize().getRows()-1, "Press \"Tab\" to toggle rgb");
             screen.refresh();
 
-            try {
-                // RGB needs a higher frame-rate, a static text doesn't need lots of updates
-                if (rgbEnabled[0]){
-                    Thread.sleep(30);
-                }
-                else {
-                    Thread.sleep(200);
-                }
-
-            } catch (InterruptedException ignored) {
-
+            // RGB needs a higher frame-rate, a static text doesn't need lots of updates
+            if (rgbEnabled[0]){
+                waitFor(30);
             }
+            else {
+                waitFor(200);
+            }
+
         }
         screen.clear();
     }
 
+    private void waitFor(int millis){
+        try {
+            Thread.sleep(millis);
+        }catch (InterruptedException ignored) {
+
+        }
+    }
 
 
-
-    private void showOptions() throws IOException {
+    private void showOptions() {
         screen.clear();
         MenuPopupWindow window = new MenuPopupWindow(mainPanel);
         window.setTheme(getWindowTheme());
@@ -813,7 +802,6 @@ public class UIManager {
      *
      * @param force Forces to ask the username
      * @return The entered username. Returns {@code null} if the user cancels the action or an I/O error occurs.
-     * @throws IOException If an I/O error occurs while interacting with the user interface.
      */
     private String getUsername(boolean force) {
         final String[] username = {""};

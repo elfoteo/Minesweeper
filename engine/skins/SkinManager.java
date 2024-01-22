@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SkinManager {
-    private static List<ISkin> skinClasses = new ArrayList<>();
+    private static final List<ISkin> skinClasses = new ArrayList<>();
 
     public static List<ISkin> getSkins() {
         return skinClasses;

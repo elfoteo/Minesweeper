@@ -15,15 +15,12 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public class Leaderboard {
     private final TextGraphics textGraphics;
     private final Screen screen;
-    private LocalLeaderboardAPI localLeaderboard;
+    private final LocalLeaderboardAPI localLeaderboard;
 
     public Leaderboard(Screen screen, TextGraphics textGraphics){
         this.screen = screen;
@@ -84,8 +81,7 @@ public class Leaderboard {
 
         screen.clear();
 
-        boolean running = true;
-        while (running) {
+        while (true) {
             // Add logo
             int x = Utils.getMaxStringLength(Constants.leaderboardLogo);
             int y = 1;
@@ -259,16 +255,14 @@ public class Leaderboard {
             // Close the connection
             connection.disconnect();
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception ignored) {
+
         }
         return "";
     }
 
     public void sendPlayerDataAsync(User playerData) {
-        new Thread(() -> {
-            sendPlayerData(playerData);
-        }).start();
+        new Thread(() -> sendPlayerData(playerData)).start();
     }
 
 

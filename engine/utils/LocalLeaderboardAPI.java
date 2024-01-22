@@ -43,7 +43,7 @@ public class LocalLeaderboardAPI {
         }
     }
 
-    public void addUser(Leaderboard.User user) throws IOException {
+    public void addUser(Leaderboard.User user) {
         // Create an empty JSONArray or get the existing one
         JSONArray usersArray;
         if (data.has("users") && data.get("users") instanceof JSONArray) {

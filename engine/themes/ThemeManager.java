@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ThemeManager {
-    private static List<IGameTheme> gameThemeClasses = new ArrayList<>();
+    private static final List<IGameTheme> gameThemeClasses = new ArrayList<>();
 
     public static List<IGameTheme> getThemes() {
         return gameThemeClasses;

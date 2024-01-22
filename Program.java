@@ -1,5 +1,4 @@
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
-import com.googlecode.lanterna.terminal.MouseCaptureMode;
 import com.googlecode.lanterna.terminal.Terminal;
 import engine.UIManager;
 import engine.skins.SkinManager;

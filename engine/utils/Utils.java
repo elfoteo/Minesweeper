@@ -135,19 +135,6 @@ public class Utils {
         );
     }
 
-    public static Color calculateGradientColor(Color color1, Color color2, Color color3, double percentage) {
-        // Ensure percentage is within the valid range [0, 1]
-        percentage = Math.max(0, Math.min(1, percentage));
-
-        // Calculate the individual components of the resulting color
-        int red = (int) (color1.getRed() + percentage * (color2.getRed() - color1.getRed()) + percentage * (color3.getRed() - color2.getRed()));
-        int green = (int) (color1.getGreen() + percentage * (color2.getGreen() - color1.getGreen()) + percentage * (color3.getGreen() - color2.getGreen()));
-        int blue = (int) (color1.getBlue() + percentage * (color2.getBlue() - color1.getBlue()) + percentage * (color3.getBlue() - color2.getBlue()));
-
-        // Create and return the resulting color
-        return new Color(red, green, blue);
-    }
-
     /**
      * Sorts a list of Users based on difficulty, score, and time.
      * Sorting order:
@@ -216,17 +203,5 @@ public class Utils {
         int width = textGraphics.getSize().getColumns();
         String message = String.format(label, content) + " ".repeat(width - (label.length() + content.length()));
         textGraphics.putString(0, line, message);
-    }
-
-    /**
-     * Normalizes a double value within a specific range.
-     *
-     * @param n   The input value to be normalized.
-     * @param min The minimum value of the range.
-     * @param max The maximum value of the range.
-     * @return The normalized value within the specified range.
-     */
-    public static double normalize(double n, double min, double max) {
-        return Math.max(min, Math.min(max, n));
     }
 }
