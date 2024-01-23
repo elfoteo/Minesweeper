@@ -14,8 +14,10 @@ public class GameInstance{
     private boolean playAgain;
     private boolean gameEnded;
     private Minesweeper minesweeper;
-    private Rectangle gameBounds;
-    public GameInstance(Screen screen, MinesweeperDifficulty difficulty) {
+    private final Rectangle gameBounds;
+    private final MinesweeperDifficulty difficulty;
+    private final String username;
+    public GameInstance(Screen screen, MinesweeperDifficulty difficulty, String username) {
         // Get the information for the difficulty
         Tuple<Integer, Tuple<Integer, Integer>> difficultyInfo = Utils.getDifficultyInfo(difficulty);
         minesweeper = new Minesweeper(difficultyInfo.second().first(), difficultyInfo.second().second(), difficultyInfo.first());
@@ -35,6 +37,8 @@ public class GameInstance{
         playAgain = false;
         gameEnded = false;
         respawnTimes = 0;
+        this.difficulty = difficulty;
+        this.username =  username;
     }
 
     // Getters
@@ -105,5 +109,13 @@ public class GameInstance{
 
     public void setRespawnTimes(int respawnTimes) {
         this.respawnTimes = respawnTimes;
+    }
+
+    public MinesweeperDifficulty getDifficulty() {
+        return difficulty;
+    }
+
+    public String getUsername() {
+        return username;
     }
 }

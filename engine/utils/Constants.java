@@ -60,7 +60,10 @@ How to navigate menus:
 How to play:
  - Navigate the grid with the 4 arrow keys.
  - Press Enter to uncover a cell.
- - Press "F" to flag a cell.""";
+ - Press "F" to flag a cell.
+ - To win you need to flag all mines correctly
+ 
+If you uncover a mine you can respawn up to 3 times if you have enough score""";
 
     public static final String dataCollectionAcceptedFile = "data/data_collection.txt";
     public static final String skinFile = "data/skin.dat";

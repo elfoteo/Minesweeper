@@ -68,7 +68,6 @@ public class UIManager {
         mainPanel = new Panel();
         mainWindow.setComponent(mainPanel);
         hints.add(Window.Hint.CENTERED);
-        hints.add(Window.Hint.MENU_POPUP);
 
         mainWindow.setHints(hints);
 
@@ -566,10 +565,10 @@ public class UIManager {
      *
      * @param message       The message to be displayed in the popup window.
      * @param gameInstance  The GameInstance object representing the current game state.
-     * @param showContinue  If true, includes a "Continue" button; otherwise, only "Play Again" and "Exit" buttons are shown.
+     * @param showContinueButton  If true, includes a "Continue" button; otherwise, only "Play Again" and "Exit" buttons are shown.
      * @return              True if the "Continue" button was pressed, false otherwise.
      */
-    public boolean showGameEndPopup(String message, GameInstance gameInstance, boolean showContinue, int subScore) {
+    public boolean showGameEndPopup(String message, GameInstance gameInstance, boolean showContinueButton, int subtractScore) {
         boolean[] continuePressed = new boolean[] {false};
         MenuPopupWindow window = new MenuPopupWindow(mainPanel);
         window.setTheme(getWindowTheme());
@@ -583,8 +582,8 @@ public class UIManager {
         playAgainButton.setTheme(getConfirmButtonTheme());
         buttonsPanel.addComponent(playAgainButton);
 
-        if (showContinue){
-            Button continueButton = new Button(String.format("Continue [%s score]", subScore), () -> {
+        if (showContinueButton){
+            Button continueButton = new Button(String.format("Continue [%s score]", subtractScore), () -> {
                 gameInstance.setPlayAgain(true);
                 continuePressed[0] = true;
                 window.close();

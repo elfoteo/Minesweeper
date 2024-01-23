@@ -66,7 +66,7 @@ public class Game {
         textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - title.length() / 2, 0, title);
         screen.refresh();
         // Prepare game
-        GameInstance gameInstance = new GameInstance(screen, difficulty);
+        GameInstance gameInstance = new GameInstance(screen, difficulty, username);
         Minesweeper minesweeper = gameInstance.getMinesweeper();
         IGameTheme gameTheme = uiManager.getTheme();
         // Start timer
@@ -100,7 +100,7 @@ public class Game {
                     Cell cell = minesweeper.getCell(col, row);
                     String cellContent = String.valueOf(cell.getChar());
 
-                    if (minesweeper.isCellHighlighted(col, row)) {
+                    if (minesweeper.isFlagged(col, row)) {
                         // Highlight the cell if needed
                         textGraphics.setForegroundColor(Constants.cellHighlightColor);
                         cellContent = String.valueOf(minesweeper.getCell(col, row, true).getChar());
@@ -153,8 +153,12 @@ public class Game {
                 case ArrowLeft -> handleArrowMovement(gameInstance, bounds, 0, -2);
                 case ArrowRight -> handleArrowMovement(gameInstance, bounds, 0, 2);
                 case Character -> handleKeypress(choice, minesweeper, gameInstance);
-                case Enter -> handleEnter(username, difficulty, minesweeper, gameInstance);
+                case Enter -> handleEnter(minesweeper, gameInstance);
                 case EOF, Escape -> handleEOFOrEscape(choice, gameInstance);
+            }
+            // After processing witch move to make let's check if the game ended
+            if (minesweeper.checkGameWinConditions()){
+                showGameWonMessage(gameInstance, gameInstance.getUsername(), gameInstance.getDifficulty());
             }
             // If the user wants to play again, then the game has ended
             if (gameInstance.isGameEnded()){
@@ -194,7 +198,28 @@ public class Game {
         }
     }
 
-    private void handleEnter(String username, MinesweeperDifficulty difficulty, Minesweeper minesweeper, GameInstance gameInstance) {
+    private void showGameWonMessage(GameInstance gameInstance, String username, MinesweeperDifficulty difficulty) {
+        // Stop the timer
+        stopTimer();
+
+        // Send data async to the leaderboard
+        uiManager.getLeaderboard().sendPlayerDataAsync(
+                new Leaderboard.User(username, gameInstance.getScore(), getTimerRemainingTime(), difficulty)
+        );
+        // Show win popup
+        uiManager.showGameEndPopup(
+                String.format(
+                        Constants.winMessage,
+                        gameInstance.getScore()
+                ),
+                gameInstance,
+                false,
+                0
+        );
+        gameInstance.setGameEnded(true);
+    }
+
+    private void handleEnter(Minesweeper minesweeper, GameInstance gameInstance) {
         boolean wasUncovered = minesweeper.isUncovered(gameInstance.getTruePos()[0], gameInstance.getTruePos()[1]);
         Tuple<CellType, Tuple<Integer, Boolean>> minedTile = minesweeper.uncover(gameInstance.getTruePos()[0],
                 gameInstance.getTruePos()[1]);
@@ -205,15 +230,8 @@ public class Game {
 
         if (minedTile.second().second()) {
             // Player has won
-            // Stop the timer
-            stopTimer();
-            // Add the score
+            // Add the score of the last mined tile
             gameInstance.setScore(gameInstance.getScore()+minedTile.second().first());
-            // Send data async to the leaderboard
-            uiManager.getLeaderboard().sendPlayerDataAsync(new Leaderboard.User(username, gameInstance.getScore(), getTimerRemainingTime(), difficulty));
-            // Show win popup
-            uiManager.showGameEndPopup(String.format(Constants.winMessage, gameInstance.getScore()), gameInstance, false, 0);
-            gameInstance.setGameEnded(true);
         } else if (minedTile.first() == CellType.MINE && !wasUncovered) {
             // If the tile that the player has mined is a mine, and it wasn't yet mined, The player has lost
             // Stop the timer
@@ -259,8 +277,7 @@ public class Game {
         // Refresh the screen to see the changes in real time
         try {
             screen.refresh();
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
     }
 
     private String getTimerRemainingTime(){
@@ -354,20 +371,15 @@ public class Game {
         popupContainer.addComponent(new EmptySpace(uiManager.getThemeBackgroundColor(), new TerminalSize(20, 1)));
         popupContainer.addComponent(buttonContainer);
 
-        try {
-            popupWindow.setComponent(popupContainer);
-            popupWindow.setPosition(new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - 10,
-                    terminal.getTerminalSize().getRows() / 2 - 4));
-            gui.addWindowAndWait(popupWindow);
-        } catch (IOException ignore) {
-            // Handle the exception as needed
-        }
+
+        popupWindow.setComponent(popupContainer);
+        uiManager.centerWindow(popupWindow);
+        gui.addWindowAndWait(popupWindow);
     }
 
     private boolean warningExitMessage(GameInstance gameInstance) {
         boolean[] res = new boolean[] {false};
 
-        long sysTime = pauseTimer();
         String warningMessage = "Do you really want to exit?\nAll the progress will be lost";
 
         MenuPopupWindow popupWindow = new MenuPopupWindow(mainPanel);
@@ -378,7 +390,6 @@ public class Game {
 
         Button cancelButton = new Button("No", () -> {
             res[0] = false;
-            resumeTimer(sysTime);
             popupWindow.close();
         });
         cancelButton.setPreferredSize(new TerminalSize(4, 1));
@@ -396,14 +407,11 @@ public class Game {
 
         popupContainer.addComponent(buttonContainer);
 
-        try {
-            popupWindow.setComponent(popupContainer);
-            popupWindow.setPosition(new TerminalPosition(terminal.getTerminalSize().getColumns() / 2 - (Utils.getMaxStringLength(warningMessage.split("\n"))+2) / 2,
-                    terminal.getTerminalSize().getRows() / 2 - 4));
-            gui.addWindowAndWait(popupWindow);
-        } catch (IOException ignore) {
-            // Handle the exception as needed
-        }
+
+        popupWindow.setComponent(popupContainer);
+        uiManager.centerWindow(popupWindow);
+        gui.addWindowAndWait(popupWindow);
+
         return res[0];
     }
 }

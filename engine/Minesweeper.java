@@ -112,7 +112,7 @@ public class Minesweeper {
      * @return A tuple containing the uncovered cell's character, the score, and a flag indicating whether the game has ended.
      */
     public Tuple<CellType, Tuple<Integer, Boolean>> uncover(int x, int y) {
-        if (isCellHighlighted(x, y)){
+        if (isFlagged(x, y)){
             return new Tuple<>(null, new Tuple<>(0, false));
         }
         boolean wasUncovered;
@@ -146,23 +146,33 @@ public class Minesweeper {
                     score += uncoverAdjacent(x, y + 1);
                 }
             }
+            gameEnded = checkGameWinConditions();
 
-            for (x = 0; x < matrix.length; x++) {
-                for (y = 0; y < matrix[0].length; y++) {
-                    if (!isUncovered(x, y) && matrix[x][y].type != CellType.MINE){
-                        gameEnded = false;
-                        break;
-                    }
-                }
-                if (!gameEnded){
-                    break;
-                }
-            }
         } catch (ArrayIndexOutOfBoundsException ignore) {
             // Ignore if the coordinates are out of bounds
         }
 
         return new Tuple<>(cellValue, new Tuple<>(score, gameEnded));
+    }
+
+    public boolean checkGameWinConditions() {
+        // Game ending conditions:
+        // All cells have been uncovered (only non-mines),
+        // And if the cell is a mine, then it needs to be flagged or uncovered
+        for (int x = 0; x < matrix.length; x++) {
+            for (int y = 0; y < matrix[0].length; y++) {
+                if (isMine(x, y) && !isFlagged(x, y)) {
+                    // If the cell is a mine and is not flagged
+                    if (!isUncovered(x, y)){
+                        return false;
+                    }
+                }
+                if (!isUncovered(x, y) && !isMine(x, y)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**
@@ -250,7 +260,7 @@ public class Minesweeper {
         // loop the 8 adjacent cells
         for (int i = x - 1; i <= x + 1; i++) {
             for (int j = y - 1; j <= y + 1; j++) {
-                if ((i != x || j != y) && (isCellHighlighted(i, j) || (isMine(i, j) && isUncovered(i, j)))) {
+                if ((i != x || j != y) && (isFlagged(i, j) || (isMine(i, j) && isUncovered(i, j)))) {
                     num++;
                 }
             }
@@ -269,7 +279,7 @@ public class Minesweeper {
      * @param y The y-coordinate of the cell to be checked for highlighting.
      * @return {@code true} if the cell is highlighted, {@code false} otherwise.
      */
-    public boolean isCellHighlighted(int x, int y) {
+    public boolean isFlagged(int x, int y) {
         try {
             return matrix[x][y].isFlagged();
         } catch (ArrayIndexOutOfBoundsException ignore) {
@@ -330,7 +340,7 @@ public class Minesweeper {
             unhighlightCell(x, y);
             return;
         }
-        if (isCellHighlighted(x, y)) {
+        if (isFlagged(x, y)) {
             unhighlightCell(x, y);
         } else {
             highlightCell(x, y);
