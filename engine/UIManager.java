@@ -37,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 public class UIManager {
     private final String[] menuOptions = new String[] {"Play", "Leaderboard", "Settings", "About", "Exit"};
@@ -141,6 +142,9 @@ public class UIManager {
 
     public TextColor getThemeBackgroundColor() {
         return selectedTheme.getBackgroundColor();
+    }
+    public TextColor getThemeForeground() {
+        return selectedTheme.getForegroundColor();
     }
 
     public IGameTheme getTheme(){
@@ -757,6 +761,7 @@ public class UIManager {
                 case EASY -> button.setTheme(new SimpleTheme(TextColor.ANSI.GREEN, TextColor.ANSI.DEFAULT, SGR.BOLD));
                 case MEDIUM -> button.setTheme(new SimpleTheme(new TextColor.RGB(255, 115, 0), TextColor.ANSI.DEFAULT, SGR.BOLD));
                 case HARD -> button.setTheme(new SimpleTheme(new TextColor.RGB(180, 0, 0), TextColor.ANSI.DEFAULT, SGR.BOLD));
+                case CUSTOM -> button.setTheme(new SimpleTheme(new TextColor.RGB(200, 200, 200), TextColor.ANSI.DEFAULT, SGR.BOLD));
             }
             button.setPreferredSize(new TerminalSize(27, 1));
             container.addComponent(button);
@@ -846,4 +851,106 @@ public class UIManager {
         gui.addWindowAndWait(window);
         return username[0];
     }
+
+    public Tuple<Integer, Tuple<Integer, Integer>> askCustomDifficulty() {
+        // Arg 1: how many mines
+        // Arg 2: Tuple containing grid bounds (w, h)
+        final int[] result = {-1, -1, -1};
+
+        MenuPopupWindow window = new MenuPopupWindow(mainPanel);
+        window.setTheme(getWindowTheme());
+        Panel container = new Panel();
+        Panel minesTextPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        Panel gridSizeTextPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        Panel buttonsPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        minesTextPanel.addComponent(new Label("Enter how many mines:"));
+        TextBox mines = new TextBox("");
+        gridSizeTextPanel.addComponent(new Label("Grid size:"));
+        TextBox gridSizeX = new TextBox("");
+        TextBox gridSizeY = new TextBox("");
+        // Make size inputs smaller
+        gridSizeX.setPreferredSize(new TerminalSize(3, 1));
+        gridSizeY.setPreferredSize(new TerminalSize(3, 1));
+        mines.setValidationPattern(Pattern.compile("\\d+"));
+        gridSizeX.setValidationPattern(Pattern.compile("\\d+"));
+        gridSizeY.setValidationPattern(Pattern.compile("\\d+"));
+
+
+        Button enterButton = new Button("Confirm",
+                () -> {
+                    if (mines.getText().length() <= 10){
+                        // If the username is of the correct length, close the window and save the username
+                        options.setUsername(mines.getText());
+                        try{
+                            result[0] = Integer.parseInt(mines.getText());
+                            result[1] = Integer.parseInt(gridSizeX.getText());
+                            result[2] = Integer.parseInt(gridSizeY.getText());
+                            // Do all checks to verify that user input is valid values
+                            if (result[1]*2+4 > terminal.getTerminalSize().getColumns() || result[2]+5 > terminal.getTerminalSize().getRows()){
+                                // Check if the terminal window is big enough to create a game of that size
+                                showInvalidLevelDataPopup("The terminal is too small to create a game with the specified size.\nPlease resize your terminal.");
+                            }
+                            else if (result[1] * result[2] < result[0]){
+                                // Check that the gridWidth * gridHeight > mines
+                                // If the user did give invalid data
+                                // show the invalid data popup
+                                showInvalidLevelDataPopup("Too many mines.\nThe number of mines must be smaller then the area of the grid.");
+                            }
+                            else if (result[0] <= 0 || result[1] <= 0 || result[2] <= 0){
+                                showInvalidLevelDataPopup("Please give a valid grid size.");
+                            }
+                            else{
+                                window.close();
+                            }
+                        }
+                        catch (Exception ignore){
+                            showInvalidLevelDataPopup("Invalid data provided");
+                        }
+                    }
+                    else{
+                        // Show username too long popup
+                        displayPopupWindow(window, "Error, username too long");
+                    }
+                });
+        enterButton.setTheme(getConfirmButtonTheme());
+        Button cancelButton = new Button("Cancel", () -> {
+            result[0] = -1;
+            result[1] = -1;
+            result[2] = -1;
+            window.close();
+        });
+        cancelButton.setTheme(getCancelButtonTheme());
+        minesTextPanel.addComponent(mines);
+        gridSizeTextPanel.addComponent(gridSizeX);
+        gridSizeTextPanel.addComponent(new Label("x"));
+        gridSizeTextPanel.addComponent(gridSizeY);
+        buttonsPanel.addComponent(enterButton);
+        buttonsPanel.addComponent(cancelButton);
+        container.addComponent(minesTextPanel);
+        container.addComponent(gridSizeTextPanel);
+        container.addComponent(buttonsPanel);
+
+        window.setComponent(container);
+        centerWindow(window);
+        gui.addWindowAndWait(window);
+        return new Tuple<>(result[0], new Tuple<>(result[1], result[2]));
+    }
+
+    private void showInvalidLevelDataPopup(String warningMessage) {
+        MenuPopupWindow popupWindow = new MenuPopupWindow(mainPanel);
+        popupWindow.setTheme(getWindowTheme());
+        Panel popupContainer = new Panel();
+        popupContainer.addComponent(new Label(warningMessage));
+
+        Button cancelButton = new Button("Close", popupWindow::close);
+        cancelButton.setPreferredSize(new TerminalSize(7, 1));
+        cancelButton.setTheme(getCancelButtonTheme());
+
+        popupContainer.addComponent(cancelButton);
+        popupWindow.setComponent(popupContainer);
+        centerWindow(popupWindow);
+        gui.addWindowAndWait(popupWindow);
+    }
+
+
 }

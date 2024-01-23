@@ -2,6 +2,7 @@ package engine;
 
 import engine.utils.Cell;
 import engine.utils.CellType;
+import engine.utils.GameStage;
 import engine.utils.Tuple;
 
 import java.util.Random;
@@ -146,7 +147,9 @@ public class Minesweeper {
                     score += uncoverAdjacent(x, y + 1);
                 }
             }
-            gameEnded = checkGameWinConditions();
+            if (getGameStage() != GameStage.WON){
+                gameEnded = false;
+            }
 
         } catch (ArrayIndexOutOfBoundsException ignore) {
             // Ignore if the coordinates are out of bounds
@@ -155,24 +158,27 @@ public class Minesweeper {
         return new Tuple<>(cellValue, new Tuple<>(score, gameEnded));
     }
 
-    public boolean checkGameWinConditions() {
-        // Game ending conditions:
-        // All cells have been uncovered (only non-mines),
-        // And if the cell is a mine, then it needs to be flagged or uncovered
+    public GameStage getGameStage() {
+        // Check if all cells are uncovered except mines
         for (int x = 0; x < matrix.length; x++) {
             for (int y = 0; y < matrix[0].length; y++) {
-                if (isMine(x, y) && !isFlagged(x, y)) {
-                    // If the cell is a mine and is not flagged
-                    if (!isUncovered(x, y)){
-                        return false;
-                    }
-                }
                 if (!isUncovered(x, y) && !isMine(x, y)) {
-                    return false;
+                    return GameStage.IN_PROGRESS;
                 }
             }
         }
-        return true;
+
+        // Check if all mines are flagged
+        for (int x = 0; x < matrix.length; x++) {
+            for (int y = 0; y < matrix[0].length; y++) {
+                if (isMine(x, y) && !isFlagged(x, y) && !isUncovered(x, y)) {
+                    return GameStage.MINES_NOT_FLAGGED;
+                }
+            }
+        }
+
+        // The Game has been won
+        return GameStage.WON;
     }
 
     /**

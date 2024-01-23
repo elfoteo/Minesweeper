@@ -110,6 +110,9 @@ public class Utils {
             case HARD -> {
                 return new Tuple<>(52, new Tuple<>(18, 18));
             }
+            case CUSTOM -> {
+                return new Tuple<>(null, new Tuple<>(null, null));
+            }
         }
         return new Tuple<>(5, new Tuple<>(8, 8));
     }

@@ -66,7 +66,28 @@ public class Game {
         textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - title.length() / 2, 0, title);
         screen.refresh();
         // Prepare game
-        GameInstance gameInstance = new GameInstance(screen, difficulty, username);
+        // Get the information for the difficulty
+        Tuple<Integer, Tuple<Integer, Integer>> difficultyInfo;
+        if (difficulty == MinesweeperDifficulty.CUSTOM){
+            // The user has selected a custom difficulty,
+            // ask if it wants to continue as this won't count towards the leaderboard
+            if (showCustomDifficultyWarning()){
+                return true;
+            }
+            // Show the dialog asking for grid size and mines in the custom difficulty
+            difficultyInfo = uiManager.askCustomDifficulty();
+            // The user has chosen to cancel, so we return true to display again the difficulty selection menu
+            if (difficultyInfo.first() <= -1 ||
+                    difficultyInfo.second().first() <= -1 ||
+                    difficultyInfo.second().second() <= -1){
+                return true;
+            }
+        }
+        else{
+            difficultyInfo = Utils.getDifficultyInfo(difficulty);
+        }
+        // Prepare game
+        GameInstance gameInstance = new GameInstance(screen, difficulty, difficultyInfo, username);
         Minesweeper minesweeper = gameInstance.getMinesweeper();
         IGameTheme gameTheme = uiManager.getTheme();
         // Start timer
@@ -74,7 +95,7 @@ public class Game {
         timer = Executors.newSingleThreadScheduledExecutor();
         // Schedule timer update every 500 milliseconds (half second)
         timerTask = timer.scheduleAtFixedRate(this::updateTimer, 0, 500, TimeUnit.MILLISECONDS);
-        String[] field;
+
         while (gameInstance.getRunning()) {
             // Change theme colors to the theme the user selected
             uiManager.applyThemeColors(textGraphics);
@@ -84,15 +105,19 @@ public class Game {
             String message = mines < 0 ? "Mines: %s (Too many cells flagged)" : "Mines: %s";
             Utils.displaySidebarMessage(textGraphics, 2, message, String.valueOf(mines));
             // Message to help the user
-            textGraphics.putString(0, terminal.getTerminalSize().getRows()-1, "Press 'F' to flag a mine");
+            if (gameInstance.getGameStage() == GameStage.MINES_NOT_FLAGGED){
+                textGraphics.setForegroundColor(Constants.cellHighlightColor);
+                textGraphics.putString(0, terminal.getTerminalSize().getRows()-2, "To win flag all mines");
+                textGraphics.setForegroundColor(uiManager.getThemeForeground());
+            }
+            textGraphics.putString(0, terminal.getTerminalSize().getRows()-1, "Press 'F' to flag a mine or 'Escape' to pause");
             // Change the cursor position to let the user move it around with the 4 arrows
             screen.setCursorPosition(new TerminalPosition(gameInstance.getCursor()[0], gameInstance.getCursor()[1]));
 
-            field = minesweeper.getFieldAsString().split("\n");
             textGraphics.setForegroundColor(gameTheme.getMinefieldFore());
             textGraphics.setBackgroundColor(gameTheme.getMinefieldBack());
-            int centerX = screen.getTerminalSize().getColumns() / 2 - Utils.getMaxStringLength(field) / 2;
-            int centerY = screen.getTerminalSize().getRows() / 2 - field.length / 2;
+            int centerX = gameInstance.getGameBounds().x;
+            int centerY = gameInstance.getGameBounds().y;
             int offsetX = 0;
 
             for (int col = 0; col < minesweeper.getFieldWidth(); col++) {
@@ -157,7 +182,9 @@ public class Game {
                 case EOF, Escape -> handleEOFOrEscape(choice, gameInstance);
             }
             // After processing witch move to make let's check if the game ended
-            if (minesweeper.checkGameWinConditions()){
+            gameInstance.setGameStage(minesweeper.getGameStage());
+
+            if (gameInstance.getGameStage() == GameStage.WON){
                 showGameWonMessage(gameInstance, gameInstance.getUsername(), gameInstance.getDifficulty());
             }
             // If the user wants to play again, then the game has ended
@@ -202,10 +229,12 @@ public class Game {
         // Stop the timer
         stopTimer();
 
-        // Send data async to the leaderboard
-        uiManager.getLeaderboard().sendPlayerDataAsync(
-                new Leaderboard.User(username, gameInstance.getScore(), getTimerRemainingTime(), difficulty)
-        );
+        // Send data async to the leaderboard if difficulty is not custom
+        if (difficulty != MinesweeperDifficulty.CUSTOM){
+            uiManager.getLeaderboard().sendPlayerDataAsync(
+                    new Leaderboard.User(username, gameInstance.getScore(), getTimerRemainingTime(), difficulty)
+            );
+        }
         // Show win popup
         uiManager.showGameEndPopup(
                 String.format(
@@ -413,5 +442,42 @@ public class Game {
         gui.addWindowAndWait(popupWindow);
 
         return res[0];
+    }
+
+    private boolean showCustomDifficultyWarning() {
+        boolean[] quit = new boolean[] {false};
+
+        String warningMessage = "You have selected a custom difficulty.\nNote that this won't count in the leaderboard.\nDo you wish to continue?";
+
+        MenuPopupWindow popupWindow = new MenuPopupWindow(mainPanel);
+        popupWindow.setTheme(uiManager.getWindowTheme());
+        Panel popupContainer = new Panel();
+        Panel buttonContainer = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        popupContainer.addComponent(new Label(warningMessage));
+
+        Button confirmButton = new Button("Yes", () -> {
+            quit[0] = false;
+            popupWindow.close();
+        });
+        confirmButton.setPreferredSize(new TerminalSize(5, 1));
+        confirmButton.setTheme(uiManager.getConfirmButtonTheme());
+        buttonContainer.addComponent(confirmButton);
+
+        Button cancelButton = new Button("No", () -> {
+            quit[0] = true;
+            popupWindow.close();
+        });
+        cancelButton.setPreferredSize(new TerminalSize(4, 1));
+        cancelButton.setTheme(uiManager.getCancelButtonTheme());
+        buttonContainer.addComponent(cancelButton);
+
+        popupContainer.addComponent(buttonContainer);
+
+
+        popupWindow.setComponent(popupContainer);
+        uiManager.centerWindow(popupWindow);
+        gui.addWindowAndWait(popupWindow);
+
+        return quit[0];
     }
 }
