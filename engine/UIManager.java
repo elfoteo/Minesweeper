@@ -16,6 +16,8 @@ import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.Terminal;
+import engine.gui.impl.MainMenuGUI;
+import engine.gui.impl.SettingsGUI;
 import engine.options.Options;
 import engine.options.OptionsInstance;
 import engine.skins.ISkin;
@@ -42,9 +44,9 @@ import java.util.regex.Pattern;
 
 public class UIManager {
     private final String[] menuOptions = new String[] {"Play", "Leaderboard", "Settings", "About", "Exit"};
+    private int selectedIndex = 0;
     public static ISkin selectedSkin = new DefaultSkin();
     public static IGameTheme selectedTheme = new DefaultGameTheme();
-    private int selectedIndex = 0;
     private final Terminal terminal;
     private final Screen screen;
     private final MultiWindowTextGUI gui;
@@ -155,6 +157,10 @@ public class UIManager {
         return selectedTheme;
     }
 
+    public Game getGame() {
+        return game;
+    }
+
     public boolean showDataCollectionWarning() throws IOException {
         if (isDataCollectionRejected()) {
             final boolean[] accepted = {false};
@@ -201,7 +207,7 @@ public class UIManager {
         return true;
     }
 
-    private boolean isDataCollectionRejected() {
+    public boolean isDataCollectionRejected() {
         try {
             Path filePath = Path.of(Constants.dataCollectionAcceptedFile);
             Files.createDirectories(filePath.getParent());
@@ -230,222 +236,11 @@ public class UIManager {
     }
 
     public void showMainScreen() throws IOException {
-        // If the data collection isn't accepted yet
-        if (isDataCollectionRejected()){
-            // If the user denies the data collection exit
-            if (!showDataCollectionWarning()){
-                return;
-            }
-        }
-        try{
-            SkinManager.loadSelectedSkinFromFile(Constants.skinFile);
-        } catch (Exception ignore){}
-        try{
-            ThemeManager.loadSelectedThemeFromFile(Constants.themeFile);
-        } catch (Exception ignore){}
-        boolean running = true;
-        while (running){
-            // screen.doResizeIfNecessary() returns size if the screen has been resized, null if not
-            // if the screen has been resized clear the screen
-            if (screen.doResizeIfNecessary() != null){
-                screen.clear();
-            }
-            applyThemeColors(textGraphics);
-            // Add logo
-            int x = Utils.getMaxStringLength(Constants.minesweeperLogo);
-            int y = 1;
-            for (String logoLine : Constants.minesweeperLogo){
-                textGraphics.putString(screen.getTerminalSize().getColumns()/2-x/2, y, logoLine);
-                y++;
-            }
-            // Add creator text
-            int xOffset = 0;
-
-            for (String segment : Constants.creatorText.split("\\*")) {
-                // Display the non-star segment without any modifiers
-                applyThemeColors(textGraphics);
-                textGraphics.putString(screen.getTerminalSize().getColumns() - Constants.creatorText.length() - 1 + xOffset,
-                        terminal.getTerminalSize().getRows() - 1, segment);
-                xOffset += segment.length();
-
-                // Apply the blinking style to the next star
-                textGraphics.setStyleFrom(Constants.blinkStyle);
-                applyThemeColors(textGraphics);
-                // Display the star with the blinking style
-                textGraphics.putString(screen.getTerminalSize().getColumns() - Constants.creatorText.length() - 1 + xOffset,
-                        terminal.getTerminalSize().getRows() - 1, "*");
-
-                // Move the xOffset to the next position after the star
-                textGraphics.clearModifiers();
-                xOffset++;
-                screen.refresh();
-            }
-
-            // Hide cursor
-            Utils.hideCursor(0, 0, textGraphics);
-            // Clear any modifiers after the loop
-            textGraphics.clearModifiers();
-            screen.refresh();
-            applyThemeColors(textGraphics);
-
-            x = Utils.getMaxStringLength(menuOptions)+2;
-            y = Constants.minesweeperLogo.length+2;
-            int counter = 0;
-            for (String menuLine : menuOptions){
-                if (selectedIndex == counter){
-                    textGraphics.putString(screen.getTerminalSize().getColumns()/2-x/2, y, "o "+menuLine);
-                }
-                else{
-                    textGraphics.putString(screen.getTerminalSize().getColumns()/2-x/2, y, "- "+menuLine);
-                }
-                y++;
-                counter++;
-            }
-            screen.refresh();
-
-            KeyStroke choice = screen.readInput();
-            if (choice.getKeyType() == KeyType.EOF){
-                break;
-            }
-
-            if (choice.getKeyType() == KeyType.ArrowDown){
-                selectedIndex++;
-                if (selectedIndex > menuOptions.length-1){
-                    selectedIndex = 0;
-                }
-            }
-            else if (choice.getKeyType() == KeyType.ArrowUp){
-                selectedIndex--;
-                if (selectedIndex < 0){
-                    selectedIndex = menuOptions.length-1;
-                }
-            } else if (choice.getKeyType() == KeyType.Enter) {
-                switch (menuOptions[selectedIndex]){
-                    case "Play":
-                        String username = getUsername();
-                        if (username == null){
-                            break;
-                        }
-                        MinesweeperDifficulty difficulty;
-                        boolean playAgain;
-                        do {
-                            difficulty = getDifficulty();
-                            // The difficulty will only be null if the user decides to cancel
-                            if (difficulty == null){
-                                break;
-                            }
-                            playAgain = game.start(username, difficulty);
-                        }
-                        while (playAgain);
-                        break;
-                    case "Leaderboard":
-                        leaderboard.displayLeaderboard();
-                        break;
-                    case "Settings":
-                        showSettings();
-                        break;
-                    case "About":
-                        showAboutMenu();
-                        break;
-                    case "Exit":
-                        running = false;
-                        break;
-                }
-            }
-        }
-        // App ends, save options
-        Options.saveOptionsToFile(options);
+        MainMenuGUI mainMenuGUI = new MainMenuGUI(this);
+        mainMenuGUI.show();
     }
 
-    private void showSettings() throws IOException {
-        int localIndex = 0;
-        String[] localOptions = new String[] {"Skins", "Themes", "Options", "Back"};
-        screen.clear();
-        boolean running = true;
-        while (running) {
-            applyThemeColors(textGraphics);
-            // Add logo
-            int x = Utils.getMaxStringLength(Constants.settingsLogo);
-            int y = 1;
-            for (String logoLine : Constants.settingsLogo) {
-                textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - x / 2, y, logoLine);
-                y++;
-            }
-
-            // Hide cursor
-            Utils.hideCursor(0, 0, textGraphics);
-            // Clear any modifiers after the loop
-            textGraphics.clearModifiers();
-            screen.refresh();
-            applyThemeColors(textGraphics);
-
-            x = Utils.getMaxStringLength(localOptions) + 2;
-            y = Constants.minesweeperLogo.length + 2;
-            int counter = 0;
-            for (String menuLine : localOptions) {
-                if (localIndex == counter) {
-                    textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - x / 2, y, "o " + menuLine);
-                } else {
-                    textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - x / 2, y, "- " + menuLine);
-                }
-                y++;
-                counter++;
-            }
-            screen.refresh();
-
-            KeyStroke choice = screen.readInput();
-            if (choice.getKeyType() == KeyType.EOF) {
-                break;
-            }
-
-            if (choice.getKeyType() == KeyType.ArrowDown) {
-                localIndex++;
-                if (localIndex > localOptions.length - 1) {
-                    localIndex = 0;
-                }
-            } else if (choice.getKeyType() == KeyType.ArrowUp) {
-                localIndex--;
-                if (localIndex < 0) {
-                    localIndex = localOptions.length - 1;
-                }
-            } else if (choice.getKeyType() == KeyType.Escape || choice.getKeyType() == KeyType.EOF) {
-                return;
-            } else if (choice.getKeyType() == KeyType.Enter) {
-                switch (localOptions[localIndex]) {
-                    case "Skins":
-                        showSkinsMenu();
-                        break;
-                    case "Themes":
-                        ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
-                        // Schedule a timer task to update the theme every 100 milliseconds
-                        ScheduledFuture<?> timerTask = timer.scheduleAtFixedRate(this::updateTheme, 0, 100, TimeUnit.MILLISECONDS);
-                        try {
-                            showThemesMenu();
-                        } catch (Exception ex) {
-                            // If an exception occurs during menu display, stop the timer task and shutdown the timer
-                            timerTask.cancel(true);
-                            timer.shutdown();
-                            // Propagate the exception up the stack
-                            throw ex;
-                        }
-                        // If all is fine, cancel the timer
-                        timerTask.cancel(true);
-                        timer.shutdown();
-                        break;
-                    case "Options":
-                        // TODO: Music options
-                        showOptions();
-                        break;
-                    case "Back":
-                        running = false;
-                        break;
-                }
-            }
-        }
-        screen.clear();
-    }
-
-    private void updateTheme() {
+    public void updateTheme() {
         try{
             List<IGameTheme> themes = ThemeManager.getThemes();
             // Necessary
@@ -462,7 +257,7 @@ public class UIManager {
         }
     }
 
-    private void showThemesMenu() {
+    public void showThemesMenu() {
         screen.clear();
         themesMenuWindow = new MenuPopupWindow(mainPanel);
         themesMenuWindow.setTheme(getWindowTheme());
@@ -503,7 +298,7 @@ public class UIManager {
         screen.clear();
     }
 
-    private void showSkinsMenu() {
+    public void showSkinsMenu() {
         screen.clear();
         MenuPopupWindow window = new MenuPopupWindow(mainPanel);
         window.setTheme(getWindowTheme());
@@ -622,88 +417,7 @@ public class UIManager {
         return continuePressed[0];
     }
 
-    public void showAboutMenu() throws IOException {
-        boolean[] running = new boolean[]{true};
-        boolean[] rgbEnabled = new boolean[]{true};
-        screen.clear();
-        Utils.hideCursor(0, 0, textGraphics);
-
-        long startTime = System.currentTimeMillis();
-        new Thread(() -> {
-            while (running[0]) {
-                KeyStroke choice = null;
-                try {
-                    choice = screen.readInput();
-                } catch (IOException ignored) {
-                }
-                if (choice != null) {
-                    if (choice.getKeyType() == KeyType.EOF || choice.getKeyType() == KeyType.Escape) {
-                        running[0] = false;
-                    } else if (choice.getKeyType() == KeyType.Tab) {
-                        rgbEnabled[0] = !rgbEnabled[0];
-                    }
-                }
-            }
-
-        }).start();
-        String title = "About";
-        title = " ".repeat(screen.getTerminalSize().getColumns()/2-title.length()/2)+title+"\n\n";
-        String completeText = title+Constants.aboutText;
-        while (running[0]) {
-            long currentTime = System.currentTimeMillis();
-            long elapsedTime = currentTime - startTime;
-            int offsetY = 0;
-            int offsetX = 0;
-            if (rgbEnabled[0]){
-                textGraphics.enableModifiers(SGR.BOLD);
-                for (int i = 0; i < completeText.length(); i++) {
-                    int[] rgb = Utils.getRainbow(elapsedTime, i);
-
-                    textGraphics.setForegroundColor(new TextColor.RGB(rgb[0], rgb[1], rgb[2]));
-
-                    textGraphics.putString(offsetX, offsetY, String.valueOf(completeText.charAt(i)));
-                    Utils.hideCursor(0, 0, textGraphics);
-                    offsetX++;
-                    if (completeText.charAt(i) == '\n'){
-                        offsetY++;
-                        offsetX = 0;
-                    }
-                }
-            }
-            else {
-                for (String line : completeText.split("\n")){
-                    textGraphics.putString(0, offsetY, line);
-                    offsetY++;
-                }
-                Utils.hideCursor(0, 0, textGraphics);
-            }
-            textGraphics.disableModifiers(SGR.BOLD);
-            textGraphics.setForegroundColor(TextColor.ANSI.WHITE);
-            textGraphics.putString(0, screen.getTerminalSize().getRows()-1, "Press \"Tab\" to toggle rgb");
-            screen.refresh();
-
-            // RGB needs a higher frame-rate, a static text doesn't need lots of updates
-            if (rgbEnabled[0]){
-                waitFor(30);
-            }
-            else {
-                waitFor(200);
-            }
-
-        }
-        screen.clear();
-    }
-
-    private void waitFor(int millis){
-        try {
-            Thread.sleep(millis);
-        }catch (InterruptedException ignored) {
-
-        }
-    }
-
-
-    private void showOptions() {
+    public void showOptions() {
         screen.clear();
         MenuPopupWindow window = new MenuPopupWindow(mainPanel);
         window.setTheme(getWindowTheme());
@@ -756,7 +470,7 @@ public class UIManager {
      *
      * @return The selected Minesweeper difficulty. Returns {@code null} if the user cancels the action.
      */
-    private MinesweeperDifficulty getDifficulty() {
+    public MinesweeperDifficulty getDifficulty() {
         final MinesweeperDifficulty[] selectedDifficulty = {MinesweeperDifficulty.MEDIUM};
         MenuPopupWindow window = new MenuPopupWindow(mainPanel);
         Panel container = new Panel();
@@ -807,7 +521,7 @@ public class UIManager {
         centerWindow(popupWindow);
     }
 
-    private String getUsername() {
+    public String getUsername() {
         return getUsername(false);
     }
     /**
@@ -978,7 +692,7 @@ public class UIManager {
         Thread updateThread = new Thread(() -> {
             while (running.get()) {
                 messageLabel.setText(String.format(message, terminalResizeEventHandler.getLastKnownSize().getColumns(), terminalResizeEventHandler.getLastKnownSize().getRows()));
-                waitFor(100);
+                Utils.waitFor(100);
                 // If the terminal is equal or bigger of the goal size, then exit the function
                 if (terminalResizeEventHandler.getLastKnownSize().getColumns() >= goal.getColumns() && terminalResizeEventHandler.getLastKnownSize().getRows() >= goal.getRows()){
                     running.set(false);

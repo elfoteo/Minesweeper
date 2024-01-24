@@ -30,7 +30,7 @@ public class Leaderboard {
         // If the computer has a proxy set, we need to use that proxy
         System.setProperty("java.net.useSystemProxies", "true");
     }
-    private List<User> getGlobalUsers(){
+    public List<User> getGlobalUsers(){
         String raw;
         List<User> globalUsers;
         try{
@@ -50,7 +50,7 @@ public class Leaderboard {
         return null;
     }
 
-    private List<User> getLocalUsers(){
+    public List<User> getLocalUsers(){
         String raw;
         List<User> localUsers;
         try{
@@ -68,137 +68,6 @@ public class Leaderboard {
             return null;
         }
         return null;
-    }
-
-    public void displayLeaderboard() throws IOException {
-        screen.clear();
-        textGraphics.putString(0, 0, "Loading data...");
-        screen.refresh();
-        List<User> globalUsers = getGlobalUsers();
-        List<User> localUsers = getLocalUsers();
-        // uiShowingLocal, false if showing global leaderboard, true if showing local leaderboard
-        boolean uiShowingLocal = false;
-
-
-        screen.clear();
-
-        while (true) {
-            // Add logo
-            int x = Utils.getMaxStringLength(Constants.leaderboardLogo);
-            int y = 1;
-            for (String logoLine : Constants.leaderboardLogo) {
-                textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - x / 2, y, logoLine);
-                y++;
-            }
-            // Add border
-            textGraphics.putString(0, 0, "#".repeat(screen.getTerminalSize().getColumns()));
-            textGraphics.putString(0, screen.getTerminalSize().getRows()-1, "#".repeat(screen.getTerminalSize().getColumns()));
-            for (int i = 0;i < screen.getTerminalSize().getRows();i++){
-                textGraphics.putString(0, i, "#");
-                textGraphics.putString(screen.getTerminalSize().getColumns()-1, i, "#");
-            }
-            // Add helper text
-            textGraphics.putString(1, screen.getTerminalSize().getRows()-2, "Use Tab to toggle between Local and Global leaderboards");
-            // Hide cursor
-            try{
-                screen.setCursorPosition(new TerminalPosition(1, 1));
-                Utils.hideCursor(screen.getCursorPosition().getColumn(), screen.getCursorPosition().getRow(), textGraphics);
-            }
-            catch (NullPointerException ignore){
-                // Sometimes screen.getCursorPosition().getColumn()/.getRow() returns null
-            }
-
-            int width = 40;
-            int height = 12;
-            x = screen.getTerminalSize().getColumns()/2-width/2;
-            y = screen.getTerminalSize().getRows()/2-height/2+3;
-
-            Utils.drawRect(x, y, width, height, textGraphics);
-
-            if (uiShowingLocal){
-                showLocalLeaderboard(localUsers, x, y, width, height);
-            }
-            else {
-                showGlobalLeaderboard(globalUsers, x, y, width, height);
-            }
-
-            screen.refresh();
-            KeyStroke choice = screen.readInput();
-            if (choice.getKeyType() == KeyType.Escape || choice.getKeyType() == KeyType.EOF) {
-                break;
-            }
-            if (choice.getKeyType() == KeyType.Tab){
-                uiShowingLocal = !uiShowingLocal;
-            }
-            screen.clear();
-        }
-        screen.clear();
-    }
-
-    private void showGlobalLeaderboard(List<User> globalUsers, int x, int y, int width, int height){
-        String title = "Global Leaderboard";
-        textGraphics.putString(x+width/2-title.length()/2, y+1, title);
-        if (globalUsers == null){
-            String subtitle = "Connection error";
-            textGraphics.putString(x+width/2-subtitle.length()/2, y+height/2-1, subtitle);
-        }
-        else if (globalUsers.isEmpty()){
-            displayEmptyLeaderboardMessage(x, y);
-        }
-        else{
-            String fs = "   " + String.format("%-" + 12 + "s%-" + 7 + "s%-" + 7 + "s%s", "Username", "Score", "Time", "Level");
-            textGraphics.putString(x+2, y+2, fs);
-            int n = 1;
-
-            for (User user : globalUsers){
-                String formattedString = n + ") " + String.format("%-" + 12 + "s%-" + 7 + "d%-" + 7 + "s%s",
-                        user.username, user.score, user.time, Utils.toCamelCase(user.difficulty.name()));
-
-                textGraphics.putString(x+2, y+n*2+2, formattedString);
-                // Only show top 3 players
-                if (n > 3){
-                    break;
-                }
-                n++;
-            }
-        }
-    }
-
-    private void showLocalLeaderboard(List<User> localUsers, int x, int y, int width, int height){
-        String title = "Local Leaderboard";
-        textGraphics.putString(x+width/2-title.length()/2, y+1, title);
-        if (localUsers == null){
-            // This shouldn't happen
-            String subtitle = "Unexpected error";
-            textGraphics.putString(x+width/2-subtitle.length()/2, y+height/2-1, subtitle);
-        }
-        else if (localUsers.isEmpty()){
-            displayEmptyLeaderboardMessage(x, y);
-        }
-        else{
-            String fs = "   " + String.format("%-" + 12 + "s%-" + 7 + "s%-" + 7 + "s%s", "Username", "Score", "Time", "Level");
-            textGraphics.putString(x+2, y+2, fs);
-            int n = 1;
-
-            for (User user : localUsers){
-                String formattedString = n + ") " + String.format("%-" + 12 + "s%-" + 7 + "d%-" + 7 + "s%s",
-                        user.username, user.score, user.time, Utils.toCamelCase(user.difficulty.name()));
-
-                textGraphics.putString(x+2, y+n*2+2, formattedString);
-                // Only show top 3 players
-                if (n > 3){
-                    break;
-                }
-                n++;
-            }
-        }
-    }
-
-    private void displayEmptyLeaderboardMessage(int x, int y){
-        textGraphics.putString(x+2, y+3, "No one has won a game yet.");
-        textGraphics.putString(x+2, y+4, "Be the first!");
-        textGraphics.putString(x+2, y+5, "To play go to the main menu and click");
-        textGraphics.putString(x+2, y+6, "\"Play\"");
     }
 
     private static List<User> parseJson(String jsonString) {

@@ -119,6 +119,14 @@ public class Utils {
         return new Tuple<>(5, new Tuple<>(8, 8));
     }
 
+    public static void waitFor(int millis){
+        try {
+            Thread.sleep(millis);
+        }catch (InterruptedException ignored) {
+
+        }
+    }
+
     /**
      * Hides the cursor at the specified position on the screen by using inverted colors.
      * The cursor is hidden by placing space a character at the cursor position with inverted colors.

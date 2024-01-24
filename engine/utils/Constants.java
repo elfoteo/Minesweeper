@@ -9,32 +9,34 @@ import java.util.EnumSet;
 public class Constants {
     public static final TextColor cellHighlightColor = new TextColor.RGB(235, 128, 52);
     public static final TextColor dangerColor = new TextColor.RGB(200, 10, 13);
+    public static final String[] mainMenuOptions = new String[] {"Play", "Leaderboard", "Settings", "About", "Exit"};
+    public static final String[] settingsMenuOptions = new String[] {"Skins", "Themes", "Options", "Back"};
     public static final String[] minesweeperLogo = """
- __  __ _                                                  \s
-|  \\/  (_)                                                 \s
-| \\  / |_ _ __   ___  _____      _____  ___ _ __   ___ _ __\s
+ __  __ _                                                  
+|  \\/  (_)                                                 
+| \\  / |_ _ __   ___  _____      _____  ___ _ __   ___ _ __
 | |\\/| | | '_ \\ / _ \\/ __\\ \\ /\\ / / _ \\/ _ \\ '_ \\ / _ \\ '__|
-| |  | | | | | |  __/\\__ \\\\ V  V /  __/  __/ |_) |  __/ |  \s
-|_|  |_|_|_| |_|\\___||___/ \\_/\\_/ \\___|\\___| .__/ \\___|_|  \s
-										     | |             \s
-										     |_|             \s
+| |  | | | | | |  __/\\__ \\\\ V  V /  __/  __/ |_) |  __/ | 
+|_|  |_|_|_| |_|\\___||___/ \\_/\\_/ \\___|\\___| .__/ \\___|_|
+                                           | |
+                                           |_|
             """.split("\n");
     public static final String[] leaderboardLogo = """
- _                    _           _                         _\s
+ _                    _           _                         _
 | |                  | |         | |                       | |
 | |     ___  __ _  __| | ___ _ __| |__   ___   __ _ _ __ __| |
 | |    / _ \\/ _` |/ _` |/ _ \\ '__| '_ \\ / _ \\ / _` | '__/ _` |
 | |___|  __/ (_| | (_| |  __/ |  | |_) | (_) | (_| | | | (_| |
 |______\\___|\\__,_|\\__,_|\\___|_|  |_.__/ \\___/ \\__,_|_|  \\__,_|""".split("\n");
     public static final String[] settingsLogo = """
-   _____      _   _   _                \s
-  / ____|    | | | | (_)               \s
- | (___   ___| |_| |_ _ _ __   __ _ ___\s
+   _____      _   _   _                
+  / ____|    | | | | (_)               
+ | (___   ___| |_| |_ _ _ __   __ _ ___
   \\___ \\ / _ \\ __| __| | '_ \\ / _` / __|
   ____) |  __/ |_| |_| | | | | (_| \\__ \\
  |_____/ \\___|\\__|\\__|_|_| |_|\\__, |___/
-                               __/ |   \s
-                              |___/    \s""".split("\n");
+                               __/ |   
+                              |___/    """.split("\n");
     public static final String winMessage = "Congratulations! You've successfully cleared the minefield!\nScore: %d\nPress \"Play Again\" to start again or \"Exit\" to exit";
     public static final String lossMessage = "Oh no! You've uncovered a mine!\nScore: %d\nPress \"Play Again\" to start again or \"Exit\" to exit";
     public static final String creatorText = "Game made by *Matteo Ciocci*";
