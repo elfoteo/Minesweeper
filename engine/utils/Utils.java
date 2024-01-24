@@ -1,5 +1,6 @@
 package engine.utils;
 
+import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
@@ -7,6 +8,7 @@ import engine.Leaderboard;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -118,24 +120,29 @@ public class Utils {
     }
 
     /**
-     * Hides the cursor at the specified position on the screen.
-     * The cursor is hidden by placing a character at the cursor position with inverted colors.
-     * This causes the cursor to invert the colors again, so the cursor is hidden.
+     * Hides the cursor at the specified position on the screen by using inverted colors.
+     * The cursor is hidden by placing space a character at the cursor position with inverted colors.
+     * This causes the cursor to invert the colors again, hiding it.
      *
      * @param cursorX       The x-coordinate of the cursor position.
      * @param cursorY       The y-coordinate of the cursor position.
      * @param textGraphics  The TextGraphics object used for rendering on the screen.
      */
     public static void hideCursor(int cursorX, int cursorY, TextGraphics textGraphics) {
-        TextCharacter tc = textGraphics.getCharacter(cursorX, cursorY);
-        textGraphics.setCharacter(
-                cursorX,
-                cursorY,
-                new TextCharacter(
-                        tc.getCharacter(),
-                        tc.getBackgroundColor(),
-                        tc.getForegroundColor())
-        );
+        // Save current colors
+        TextColor foreBefore = textGraphics.getForegroundColor();
+        TextColor backBefore = textGraphics.getBackgroundColor();
+
+        // Set background and foreground colors to be swapped
+        textGraphics.setForegroundColor(backBefore);
+        textGraphics.setBackgroundColor(foreBefore);
+
+        // Place a space character to hide the cursor
+        textGraphics.setCharacter(cursorX, cursorY, ' ');
+
+        // Restore original colors
+        textGraphics.setBackgroundColor(backBefore);
+        textGraphics.setForegroundColor(foreBefore);
     }
 
     /**

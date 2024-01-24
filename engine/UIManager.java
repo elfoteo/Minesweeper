@@ -37,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 public class UIManager {
@@ -55,8 +56,11 @@ public class UIManager {
     private MenuPopupWindow themesMenuWindow;
     private RadioBoxList<String> themesMenuRadioboxList;
     private final List<Window.Hint> hints = new ArrayList<>();
+    public TerminalResizeEventHandler terminalResizeEventHandler;
     public UIManager(Terminal terminal) throws IOException {
         this.terminal = terminal;
+        terminalResizeEventHandler = new TerminalResizeEventHandler(terminal.getTerminalSize());
+        terminal.addResizeListener(terminalResizeEventHandler);
 
         screen = new TerminalScreen(terminal);
         textGraphics = screen.newTextGraphics();
@@ -241,6 +245,11 @@ public class UIManager {
         } catch (Exception ignore){}
         boolean running = true;
         while (running){
+            // screen.doResizeIfNecessary() returns size if the screen has been resized, null if not
+            // if the screen has been resized clear the screen
+            if (screen.doResizeIfNecessary() != null){
+                screen.clear();
+            }
             applyThemeColors(textGraphics);
             // Add logo
             int x = Utils.getMaxStringLength(Constants.minesweeperLogo);
@@ -637,7 +646,9 @@ public class UIManager {
             }
 
         }).start();
-
+        String title = "About";
+        title = " ".repeat(screen.getTerminalSize().getColumns()/2-title.length()/2)+title+"\n\n";
+        String completeText = title+Constants.aboutText;
         while (running[0]) {
             long currentTime = System.currentTimeMillis();
             long elapsedTime = currentTime - startTime;
@@ -645,24 +656,26 @@ public class UIManager {
             int offsetX = 0;
             if (rgbEnabled[0]){
                 textGraphics.enableModifiers(SGR.BOLD);
-                for (int i = 0; i < Constants.aboutText.length(); i++) {
+                for (int i = 0; i < completeText.length(); i++) {
                     int[] rgb = Utils.getRainbow(elapsedTime, i);
 
                     textGraphics.setForegroundColor(new TextColor.RGB(rgb[0], rgb[1], rgb[2]));
 
-                    textGraphics.putString(offsetX, offsetY, String.valueOf(Constants.aboutText.charAt(i)));
+                    textGraphics.putString(offsetX, offsetY, String.valueOf(completeText.charAt(i)));
+                    Utils.hideCursor(0, 0, textGraphics);
                     offsetX++;
-                    if (Constants.aboutText.charAt(i) == '\n'){
+                    if (completeText.charAt(i) == '\n'){
                         offsetY++;
                         offsetX = 0;
                     }
                 }
             }
             else {
-                for (String line : Constants.aboutText.split("\n")){
+                for (String line : completeText.split("\n")){
                     textGraphics.putString(0, offsetY, line);
                     offsetY++;
                 }
+                Utils.hideCursor(0, 0, textGraphics);
             }
             textGraphics.disableModifiers(SGR.BOLD);
             textGraphics.setForegroundColor(TextColor.ANSI.WHITE);
@@ -936,7 +949,7 @@ public class UIManager {
         return new Tuple<>(result[0], new Tuple<>(result[1], result[2]));
     }
 
-    private void showInvalidLevelDataPopup(String warningMessage) {
+    public void showInvalidLevelDataPopup(String warningMessage) {
         MenuPopupWindow popupWindow = new MenuPopupWindow(mainPanel);
         popupWindow.setTheme(getWindowTheme());
         Panel popupContainer = new Panel();
@@ -953,4 +966,40 @@ public class UIManager {
     }
 
 
+    public void waitForTerminalResize(String message, TerminalSize goal) {
+        AtomicBoolean running = new AtomicBoolean(true);
+
+        MenuPopupWindow popupWindow = new MenuPopupWindow(mainPanel);
+        popupWindow.setTheme(getWindowTheme());
+        Panel popupContainer = new Panel();
+        Label messageLabel = new Label(String.format(message, terminalResizeEventHandler.getLastKnownSize().getColumns(), terminalResizeEventHandler.getLastKnownSize().getRows()));
+        popupContainer.addComponent(messageLabel);
+
+        Thread updateThread = new Thread(() -> {
+            while (running.get()) {
+                messageLabel.setText(String.format(message, terminalResizeEventHandler.getLastKnownSize().getColumns(), terminalResizeEventHandler.getLastKnownSize().getRows()));
+                waitFor(100);
+                // If the terminal is equal or bigger of the goal size, then exit the function
+                if (terminalResizeEventHandler.getLastKnownSize().getColumns() >= goal.getColumns() && terminalResizeEventHandler.getLastKnownSize().getRows() >= goal.getRows()){
+                    running.set(false);
+                    popupWindow.close();
+                }
+            }
+        });
+        updateThread.start();
+
+        Button cancelButton = new Button("Close", () -> {
+            running.set(false);
+            popupWindow.close();
+        });
+        cancelButton.setPreferredSize(new TerminalSize(7, 1));
+        cancelButton.setTheme(getCancelButtonTheme());
+
+        popupContainer.addComponent(cancelButton);
+        popupWindow.setComponent(popupContainer);
+        centerWindow(popupWindow);
+        gui.addWindowAndWait(popupWindow);
+        screen.clear();
+        running.set(false);
+    }
 }

@@ -48,7 +48,6 @@ public class Constants {
 may be sent to the leaderboard for competition purposes.
 Your privacy is important for us, and your data will be handled securely.""";
     public static final String aboutText = """
-About
 Welcome to Minesweeper, a console-based game.
 This game was coded by Matteo Ciocci as a school project.
 

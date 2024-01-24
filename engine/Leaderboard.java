@@ -1,5 +1,6 @@
 package engine;
 
+import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
@@ -100,6 +101,7 @@ public class Leaderboard {
             textGraphics.putString(1, screen.getTerminalSize().getRows()-2, "Use Tab to toggle between Local and Global leaderboards");
             // Hide cursor
             try{
+                screen.setCursorPosition(new TerminalPosition(1, 1));
                 Utils.hideCursor(screen.getCursorPosition().getColumn(), screen.getCursorPosition().getRow(), textGraphics);
             }
             catch (NullPointerException ignore){

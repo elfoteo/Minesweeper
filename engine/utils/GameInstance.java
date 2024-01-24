@@ -1,5 +1,6 @@
 package engine.utils;
 
+import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.screen.Screen;
 import engine.Minesweeper;
 
@@ -14,7 +15,7 @@ public class GameInstance{
     private boolean playAgain;
     private boolean gameEnded;
     private Minesweeper minesweeper;
-    private final Rectangle gameBounds;
+    private Rectangle gameBounds;
     private final MinesweeperDifficulty difficulty;
     private GameStage gameStage;
     private final String username;
@@ -129,5 +130,34 @@ public class GameInstance{
 
     public void setGameStage(GameStage gameStage) {
         this.gameStage = gameStage;
+    }
+
+    /**
+     * Recalculates the game bounds based on the current screen size and field dimensions.
+     * The game bounds determine the position and size of the playable game area within the screen.
+     *
+     * @param screen The Screen object representing the terminal screen.
+     */
+    public void recalculateGameBounds(TerminalSize newSize) {
+        // Calculate the new x-coordinate for the top-left corner of the game area
+        int newX = newSize.getColumns() / 2 - (minesweeper.getFieldWidth() * 2 - 1) / 2;
+
+        // Calculate the new y-coordinate for the top-left corner of the game area
+        int newY = newSize.getRows() / 2 - minesweeper.getFieldHeight() / 2;
+
+        // Update the cursor position based on the change in game area position to make sure is not out of the screen
+        cursor = new int[]{
+                newX + truePos[0]*2, // This is the virtual cursor position,
+                // to transform it in character we need to multiply by 2
+                newY + truePos[1] // Here no *2
+        };
+
+        // Create a new Rectangle representing the updated game bounds
+        gameBounds = new Rectangle(
+                newX,
+                newY,
+                minesweeper.getFieldWidth() * 2 - 1,
+                minesweeper.getFieldHeight()
+        );
     }
 }

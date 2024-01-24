@@ -62,9 +62,6 @@ public class Game {
      */
     public boolean start(String username, MinesweeperDifficulty difficulty) throws IOException {
         screen.clear();
-        String title = "Minesweeper";
-        textGraphics.putString(screen.getTerminalSize().getColumns() / 2 - title.length() / 2, 0, title);
-        screen.refresh();
         // Prepare game
         // Get the information for the difficulty
         Tuple<Integer, Tuple<Integer, Integer>> difficultyInfo;
@@ -85,6 +82,13 @@ public class Game {
         }
         else{
             difficultyInfo = Utils.getDifficultyInfo(difficulty);
+            if (difficultyInfo.second().first()*2+4 > terminal.getTerminalSize().getColumns() || difficultyInfo.second().second()+5 > terminal.getTerminalSize().getRows()){
+                // Check if the terminal window is big enough to create a game of that size
+                uiManager.waitForTerminalResize(
+                        "Current size: %sx%s\nRequired size: " + (difficultyInfo.second().first()*2 + 4) + "x" + (difficultyInfo.second().second() + 5)+"\nThe terminal is too small to create a game with the specified size.\nPlease resize your terminal.",
+                        new TerminalSize(difficultyInfo.second().first()*2+4, difficultyInfo.second().second()+5)
+                );
+            }
         }
         // Prepare game
         GameInstance gameInstance = new GameInstance(screen, difficulty, difficultyInfo, username);
@@ -95,82 +99,22 @@ public class Game {
         timer = Executors.newSingleThreadScheduledExecutor();
         // Schedule timer update every 500 milliseconds (half second)
         timerTask = timer.scheduleAtFixedRate(this::updateTimer, 0, 500, TimeUnit.MILLISECONDS);
-
+        // When the terminal gets resized, resize the grid
+        uiManager.terminalResizeEventHandler.subscribe(
+                () -> resizeGame(gameInstance)
+        );
         while (gameInstance.getRunning()) {
-            // Change theme colors to the theme the user selected
-            uiManager.applyThemeColors(textGraphics);
-            // Display sidebar messages
-            Utils.displaySidebarMessage(textGraphics, 1, "Score: %s", String.valueOf(gameInstance.getScore()));
-            int mines = minesweeper.getRemainingMines();
-            String message = mines < 0 ? "Mines: %s (Too many cells flagged)" : "Mines: %s";
-            Utils.displaySidebarMessage(textGraphics, 2, message, String.valueOf(mines));
-            // Message to help the user
-            if (gameInstance.getGameStage() == GameStage.MINES_NOT_FLAGGED){
-                textGraphics.setForegroundColor(Constants.cellHighlightColor);
-                textGraphics.putString(0, terminal.getTerminalSize().getRows()-2, "To win flag all mines");
-                textGraphics.setForegroundColor(uiManager.getThemeForeground());
+            // If the screen gets resized, resize it and then clear it
+            if (screen.doResizeIfNecessary() != null){
+                screen.clear();
+                updateTimer();
+                // After resizing and clearing, we need to recalculate the game bounds
+                gameInstance.recalculateGameBounds(screen.getTerminalSize());
             }
-            textGraphics.putString(0, terminal.getTerminalSize().getRows()-1, "Press 'F' to flag a mine or 'Escape' to pause");
-            // Change the cursor position to let the user move it around with the 4 arrows
-            screen.setCursorPosition(new TerminalPosition(gameInstance.getCursor()[0], gameInstance.getCursor()[1]));
-
-            textGraphics.setForegroundColor(gameTheme.getMinefieldFore());
-            textGraphics.setBackgroundColor(gameTheme.getMinefieldBack());
-            int centerX = gameInstance.getGameBounds().x;
-            int centerY = gameInstance.getGameBounds().y;
-            int offsetX = 0;
-
-            for (int col = 0; col < minesweeper.getFieldWidth(); col++) {
-                for (int row = 0; row < minesweeper.getFieldHeight(); row++) {
-                    Cell cell = minesweeper.getCell(col, row);
-                    String cellContent = String.valueOf(cell.getChar());
-
-                    if (minesweeper.isFlagged(col, row)) {
-                        // Highlight the cell if needed
-                        textGraphics.setForegroundColor(Constants.cellHighlightColor);
-                        cellContent = String.valueOf(minesweeper.getCell(col, row, true).getChar());
-                    } else if (minesweeper.isUncovered(col, row) && cell.type == CellType.NUMBER) {
-                        // Color cell numbers
-                        int number = cell.getNumber();
-
-                        // Set color based on conditions
-                        if (number == minesweeper.getNumbersOfFlaggedCells(col, row) && uiManager.getOptions().isGrayOutNearbyCells()) {
-                            // Give a hint only if the options allow it
-                            textGraphics.setForegroundColor(gameTheme.getWarningColor(number, true));
-                        } else {
-                            textGraphics.setForegroundColor(gameTheme.getWarningColor(number, false));
-                        }
-                    }
-                    else{
-                        textGraphics.setForegroundColor(gameTheme.getMinefieldFore());
-                        textGraphics.setBackgroundColor(gameTheme.getMinefieldBack());
-                    }
-                    // Can happen if the player decides to continue the game, loosing score
-                    if (cell.type == CellType.MINE){
-                        // If the cell is a mine, then color it red
-                        textGraphics.setForegroundColor(Constants.dangerColor);
-                    }
-
-                    // Display the cell content
-                    textGraphics.putString(centerX + col + offsetX, centerY + row, cellContent);
-
-                    // Reset foreground color to default
-                    textGraphics.setForegroundColor(TextColor.ANSI.DEFAULT);
-                }
-                offsetX += 1;
-            }
-            uiManager.applyThemeColors(textGraphics);
-            // Draw rectangle around the game
-            Rectangle bounds = gameInstance.getGameBounds();
-            Utils.drawRect(bounds.x-1, bounds.y-1,
-                    bounds.width+2,
-                    bounds.height+2, textGraphics);
-
-
-            screen.refresh();
+            drawGame(gameInstance, minesweeper, gameTheme);
 
             KeyStroke choice = screen.readInput();
-
+            Rectangle bounds = gameInstance.getGameBounds();
             switch (choice.getKeyType()) {
                 // Handle arrow movement
                 case ArrowUp -> handleArrowMovement(gameInstance, bounds, -1, 0);
@@ -200,6 +144,112 @@ public class Game {
         screen.setCursorPosition(new TerminalPosition(0, 0));
         screen.clear();
         return gameInstance.getPlayAgain();
+    }
+
+    private void resizeGame(GameInstance gameInstance){
+        new Thread(() -> {
+            // Clear the screen
+            screen.clear();
+            // Resize if necessary (it is always necessary)
+            screen.doResizeIfNecessary();
+            // After clearing and resizing, we need to recalculate the game bounds
+            // As the screen has not the new size
+            // we need to pass the terminalResizeEventHandler.getLastKnownSize()
+            gameInstance.recalculateGameBounds(uiManager.terminalResizeEventHandler.getLastKnownSize());
+
+            try{
+                // Redraw everything
+                drawGame(gameInstance, gameInstance.getMinesweeper(), uiManager.getTheme());
+                updateTimer();
+            }
+            catch (Exception ignore){
+
+            }
+        }).start();
+    }
+
+    private int getScreenWidth(){
+        return uiManager.terminalResizeEventHandler.getLastKnownSize().getColumns();
+    }
+
+    private int getScreenHeight(){
+        return uiManager.terminalResizeEventHandler.getLastKnownSize().getRows();
+    }
+
+    private void drawGame(GameInstance gameInstance, Minesweeper minesweeper, IGameTheme gameTheme) throws IOException {
+        // Draw title
+        String title = "Minesweeper";
+        textGraphics.putString(getScreenWidth() / 2 - title.length() / 2, 0, title);
+        // Change theme colors to the theme the user selected
+        uiManager.applyThemeColors(textGraphics);
+        // Display sidebar messages
+        Utils.displaySidebarMessage(textGraphics, 1, "Score: %s", String.valueOf(gameInstance.getScore()));
+        int mines = minesweeper.getRemainingMines();
+        String message = mines < 0 ? "Mines: %s (Too many cells flagged)" : "Mines: %s";
+        Utils.displaySidebarMessage(textGraphics, 2, message, String.valueOf(mines));
+        // Message to help the user
+        if (gameInstance.getGameStage() == GameStage.MINES_NOT_FLAGGED){
+            textGraphics.setForegroundColor(Constants.cellHighlightColor);
+            textGraphics.putString(0, getScreenHeight()-2, "To win flag all mines");
+            textGraphics.setForegroundColor(uiManager.getThemeForeground());
+        }
+        textGraphics.putString(0, getScreenHeight()-1, "Press 'F' to flag a mine or 'Escape' to pause");
+        // Change the cursor position to let the user move it around with the 4 arrows
+        screen.setCursorPosition(new TerminalPosition(gameInstance.getCursor()[0], gameInstance.getCursor()[1]));
+
+        textGraphics.setForegroundColor(gameTheme.getMinefieldFore());
+        textGraphics.setBackgroundColor(gameTheme.getMinefieldBack());
+        int centerX = gameInstance.getGameBounds().x;
+        int centerY = gameInstance.getGameBounds().y;
+        int offsetX = 0;
+
+        for (int col = 0; col < minesweeper.getFieldWidth(); col++) {
+            for (int row = 0; row < minesweeper.getFieldHeight(); row++) {
+                Cell cell = minesweeper.getCell(col, row);
+                String cellContent = String.valueOf(cell.getChar());
+
+                if (minesweeper.isFlagged(col, row)) {
+                    // Highlight the cell if needed
+                    textGraphics.setForegroundColor(Constants.cellHighlightColor);
+                    cellContent = String.valueOf(minesweeper.getCell(col, row, true).getChar());
+                } else if (minesweeper.isUncovered(col, row) && cell.type == CellType.NUMBER) {
+                    // Color cell numbers
+                    int number = cell.getNumber();
+
+                    // Set color based on conditions
+                    if (number == minesweeper.getNumbersOfFlaggedCells(col, row) && uiManager.getOptions().isGrayOutNearbyCells()) {
+                        // Give a hint only if the options allow it
+                        textGraphics.setForegroundColor(gameTheme.getWarningColor(number, true));
+                    } else {
+                        textGraphics.setForegroundColor(gameTheme.getWarningColor(number, false));
+                    }
+                }
+                else{
+                    textGraphics.setForegroundColor(gameTheme.getMinefieldFore());
+                    textGraphics.setBackgroundColor(gameTheme.getMinefieldBack());
+                }
+                // Can happen if the player decides to continue the game, loosing score
+                if (cell.type == CellType.MINE){
+                    // If the cell is a mine, then color it red
+                    textGraphics.setForegroundColor(Constants.dangerColor);
+                }
+
+                // Display the cell content
+                textGraphics.putString(centerX + col + offsetX, centerY + row, cellContent);
+
+                // Reset foreground color to default
+                textGraphics.setForegroundColor(TextColor.ANSI.DEFAULT);
+            }
+            offsetX += 1;
+        }
+        uiManager.applyThemeColors(textGraphics);
+        // Draw rectangle around the game
+        Rectangle bounds = gameInstance.getGameBounds();
+        Utils.drawRect(bounds.x-1, bounds.y-1,
+                bounds.width+2,
+                bounds.height+2, textGraphics);
+
+        screen.refresh();
     }
 
     private void handleArrowMovement(GameInstance gameInstance, Rectangle bounds, int deltaY, int deltaX) {
@@ -294,6 +344,7 @@ public class Game {
             gameInstance.setScore(gameInstance.getScore()+minedTile.second().first());
         }
     }
+
 
     private void updateTimer() {
         // Calculate and display the elapsed time
