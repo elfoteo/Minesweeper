@@ -1,4 +1,4 @@
-package engine;
+package engine.gui.impl;
 
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
@@ -12,6 +12,10 @@ import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.terminal.Terminal;
+import engine.Leaderboard;
+import engine.Minesweeper;
+import engine.UIManager;
+import engine.gui.AbstractTerminalGUI;
 import engine.themes.IGameTheme;
 import engine.utils.*;
 
@@ -22,15 +26,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-/**
- * The {@code Game} class represents a Minesweeper game instance. It has the logic
- * for playing the Minesweeper game and handles user interactions.
- *
- * @version 1.0
- * @since 2024-01-14
- */
-public class Game {
-    private final Screen screen;
+public class GameGUI extends AbstractTerminalGUI {
     private final TextGraphics textGraphics;
     private final Terminal terminal;
     private final Panel mainPanel;
@@ -39,28 +35,33 @@ public class Game {
     private ScheduledFuture<?> timerTask;
     private long startTime;
     private final UIManager uiManager;
+    private boolean playAgain = false;
+    private final MinesweeperDifficulty difficulty;
+    private final String username;
+    private GameInstance gameInstance;
+    private Minesweeper minesweeper;
+    private IGameTheme gameTheme;
 
-    public Game(UIManager uiManager) {
+    /**
+     * Constructor for the GameGUI.
+     *
+     * @param uiManager The UIManager giving access to the terminal and screen.
+     */
+    public GameGUI(UIManager uiManager, MinesweeperDifficulty difficulty, String username) {
+        super(uiManager.getTerminal());
         this.uiManager = uiManager;
         this.screen = uiManager.getScreen();
         this.textGraphics = uiManager.getTextGraphics();
         this.terminal = uiManager.getTerminal();
         this.mainPanel = uiManager.getMainPanel();
         this.gui = uiManager.getGui();
+        this.difficulty = difficulty;
+        this.username = username;
     }
 
-    /**
-     * Starts a Minesweeper game with the specified username and difficulty level.
-     * The method initializes and starts a Minesweeper game for the provided username and difficulty level.
-     * It returns a boolean indicating whether the player wants to play again after completing the session.
-     * If an I/O error occurs during the gameplay or user interaction, it is thrown as an IOException.
-     *
-     * @param username      The username of the player.
-     * @param difficulty    The difficulty level of the Minesweeper game.
-     * @return              true if the player wants to play again, false otherwise.
-     * @throws IOException  If an I/O error occurs during gameplay or user interaction.
-     */
-    public boolean start(String username, MinesweeperDifficulty difficulty) throws IOException {
+    @Override
+    public void show() throws IOException {
+        super.show();
         screen.clear();
         // Prepare game
         // Get the information for the difficulty
@@ -69,7 +70,7 @@ public class Game {
             // The user has selected a custom difficulty,
             // ask if it wants to continue as this won't count towards the leaderboard
             if (showCustomDifficultyWarning()){
-                return true;
+                playAgain = true;
             }
             // Show the dialog asking for grid size and mines in the custom difficulty
             difficultyInfo = uiManager.askCustomDifficulty();
@@ -77,7 +78,7 @@ public class Game {
             if (difficultyInfo.first() <= -1 ||
                     difficultyInfo.second().first() <= -1 ||
                     difficultyInfo.second().second() <= -1){
-                return true;
+                playAgain = true;
             }
         }
         else{
@@ -91,27 +92,17 @@ public class Game {
             }
         }
         // Prepare game
-        GameInstance gameInstance = new GameInstance(screen, difficulty, difficultyInfo, username);
-        Minesweeper minesweeper = gameInstance.getMinesweeper();
-        IGameTheme gameTheme = uiManager.getTheme();
+        gameInstance = new GameInstance(screen, difficulty, difficultyInfo, username);
+        minesweeper = gameInstance.getMinesweeper();
+        gameTheme = uiManager.getTheme();
         // Start timer
         startTime = System.currentTimeMillis();
         timer = Executors.newSingleThreadScheduledExecutor();
         // Schedule timer update every 500 milliseconds (half second)
         timerTask = timer.scheduleAtFixedRate(this::updateTimer, 0, 500, TimeUnit.MILLISECONDS);
-        // When the terminal gets resized, resize the grid
-        uiManager.terminalResizeEventHandler.subscribe(
-                () -> resizeGame(gameInstance)
-        );
-        while (gameInstance.getRunning()) {
-            // If the screen gets resized, resize it and then clear it
-            if (screen.doResizeIfNecessary() != null){
-                screen.clear();
-                updateTimer();
-                // After resizing and clearing, we need to recalculate the game bounds
-                gameInstance.recalculateGameBounds(screen.getTerminalSize());
-            }
-            drawGame(gameInstance, minesweeper, gameTheme);
+
+        while (gameInstance.isRunning()) {
+            draw();
 
             KeyStroke choice = screen.readInput();
             Rectangle bounds = gameInstance.getGameBounds();
@@ -138,34 +129,29 @@ public class Game {
                 break;
             }
         }
+        onClose();
+    }
+
+    @Override
+    public void onClose() {
+        super.onClose();
         // Stop timer
         stopTimer();
         // Clear screen
         screen.setCursorPosition(new TerminalPosition(0, 0));
         screen.clear();
-        return gameInstance.getPlayAgain();
+        playAgain = gameInstance.getPlayAgain();
     }
 
-    private void resizeGame(GameInstance gameInstance){
-        new Thread(() -> {
-            // Clear the screen
-            screen.clear();
-            // Resize if necessary (it is always necessary)
-            screen.doResizeIfNecessary();
-            // After clearing and resizing, we need to recalculate the game bounds
-            // As the screen has not the new size
-            // we need to pass the terminalResizeEventHandler.getLastKnownSize()
-            gameInstance.recalculateGameBounds(uiManager.terminalResizeEventHandler.getLastKnownSize());
+    boolean playAgain(){
+        return playAgain;
+    }
 
-            try{
-                // Redraw everything
-                drawGame(gameInstance, gameInstance.getMinesweeper(), uiManager.getTheme());
-                updateTimer();
-            }
-            catch (Exception ignore){
-
-            }
-        }).start();
+    @Override
+    public void onResize() {
+        super.onResize();
+        gameInstance.recalculateGameBounds(uiManager.terminalResizeEventHandler.getLastKnownSize());
+        updateTimer();
     }
 
     private int getScreenWidth(){
@@ -176,7 +162,9 @@ public class Game {
         return uiManager.terminalResizeEventHandler.getLastKnownSize().getRows();
     }
 
-    private void drawGame(GameInstance gameInstance, Minesweeper minesweeper, IGameTheme gameTheme) throws IOException {
+    @Override
+    public void draw() throws IOException {
+        super.draw();
         // Draw title
         String title = "Minesweeper";
         textGraphics.putString(getScreenWidth() / 2 - title.length() / 2, 0, title);
@@ -426,12 +414,12 @@ public class Game {
         Panel buttonContainer = new Panel(new LinearLayout(Direction.HORIZONTAL));
         titleContainer.addComponent(new EmptySpace(uiManager.getThemeBackgroundColor(),
                 new TerminalSize(9-warningMessage.length()/2, 1)));
-        titleContainer.addComponent(new Label(warningMessage));
+        titleContainer.addComponent(new com.googlecode.lanterna.gui2.Label(warningMessage));
         popupContainer.addComponent(titleContainer);
         String minesMessage = gameInstance.getMinesweeper().getRemainingMines() < 0 ? "Mines: %s (Too many cells flagged)" : "Mines: %s";
-        popupContainer.addComponent(new Label(String.format("Score: %s\n"+minesMessage, gameInstance.getScore(), gameInstance.getMinesweeper().getRemainingMines())));
+        popupContainer.addComponent(new com.googlecode.lanterna.gui2.Label(String.format("Score: %s\n"+minesMessage, gameInstance.getScore(), gameInstance.getMinesweeper().getRemainingMines())));
 
-        Button resumeButton = new Button("Resume", () -> {
+        com.googlecode.lanterna.gui2.Button resumeButton = new com.googlecode.lanterna.gui2.Button("Resume", () -> {
             resumeTimer(sysTime);
             popupWindow.close();
         });
@@ -439,7 +427,7 @@ public class Game {
         resumeButton.setTheme(uiManager.getConfirmButtonTheme());
         buttonContainer.addComponent(resumeButton);
 
-        Button exitButton = new Button("Exit", () -> {
+        com.googlecode.lanterna.gui2.Button exitButton = new com.googlecode.lanterna.gui2.Button("Exit", () -> {
             if (warningExitMessage(gameInstance)){
                 gameInstance.setRunning(false);
                 popupWindow.close();
@@ -466,9 +454,9 @@ public class Game {
         popupWindow.setTheme(uiManager.getWindowTheme());
         Panel popupContainer = new Panel();
         Panel buttonContainer = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        popupContainer.addComponent(new Label(warningMessage));
+        popupContainer.addComponent(new com.googlecode.lanterna.gui2.Label(warningMessage));
 
-        Button cancelButton = new Button("No", () -> {
+        com.googlecode.lanterna.gui2.Button cancelButton = new com.googlecode.lanterna.gui2.Button("No", () -> {
             res[0] = false;
             popupWindow.close();
         });
@@ -476,7 +464,7 @@ public class Game {
         cancelButton.setTheme(uiManager.getConfirmButtonTheme());
         buttonContainer.addComponent(cancelButton);
 
-        Button exitButton = new Button("Yes", () -> {
+        com.googlecode.lanterna.gui2.Button exitButton = new com.googlecode.lanterna.gui2.Button("Yes", () -> {
             res[0] = true;
             gameInstance.setRunning(false);
             popupWindow.close();
@@ -506,7 +494,7 @@ public class Game {
         Panel buttonContainer = new Panel(new LinearLayout(Direction.HORIZONTAL));
         popupContainer.addComponent(new Label(warningMessage));
 
-        Button confirmButton = new Button("Yes", () -> {
+        com.googlecode.lanterna.gui2.Button confirmButton = new com.googlecode.lanterna.gui2.Button("Yes", () -> {
             quit[0] = false;
             popupWindow.close();
         });
@@ -514,7 +502,7 @@ public class Game {
         confirmButton.setTheme(uiManager.getConfirmButtonTheme());
         buttonContainer.addComponent(confirmButton);
 
-        Button cancelButton = new Button("No", () -> {
+        com.googlecode.lanterna.gui2.Button cancelButton = new Button("No", () -> {
             quit[0] = true;
             popupWindow.close();
         });

@@ -3,6 +3,8 @@ package engine.gui;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.terminal.Terminal;
 import engine.TerminalResizeEventHandler;
+import engine.UIManager;
+import engine.utils.Utils;
 
 import java.io.IOException;
 
@@ -21,7 +23,7 @@ public class AbstractTerminalGUI implements ITerminalGUI {
     }
 
     /**
-     * Initialize the GUI setup with the provided terminal.
+     * Initialize the GUI setup with the given terminal.
      *
      * @param terminal The terminal instance to associate with this GUI.
      */
@@ -34,27 +36,44 @@ public class AbstractTerminalGUI implements ITerminalGUI {
             // Register the onResize event
             subscribe();
         } catch (Exception ignored) {
-            // Consider logging the exception for debugging purposes
+
         }
+    }
+
+    private void resize() {
+        new Thread(() -> {
+            try{
+                if (!resizePaused) {
+                    // Clear the screen
+                    screen.clear();
+                    // Resize screen
+                    screen.doResizeIfNecessary();
+
+                    try{
+                        onResize();
+
+                    }
+                    catch (Exception ignore){
+
+                    }
+
+                    try {
+                        // Redraw everything
+                        draw();
+                    } catch (Exception ignore) {
+
+                    }
+                }
+            }
+            catch (Exception ex){
+                Utils.Debug(Utils.exceptionToString(ex));
+            }
+        }).start();
     }
 
     @Override
     public void onResize() {
-        new Thread(() -> {
-            if (!resizePaused) {
-                // Clear the screen
-                screen.clear();
-                // Resize screen
-                screen.doResizeIfNecessary();
 
-                try {
-                    // Redraw everything
-                    draw();
-                } catch (Exception ignore) {
-                    // Consider logging the exception for debugging purposes
-                }
-            }
-        }).start();
     }
 
     @Override
@@ -64,7 +83,9 @@ public class AbstractTerminalGUI implements ITerminalGUI {
 
     @Override
     public void onClose() {
+        resizePaused = true;
         unsubscribe();
+        terminalResizeEventHandler = null;
     }
 
     @Override
@@ -81,14 +102,14 @@ public class AbstractTerminalGUI implements ITerminalGUI {
      * Unsubscribe from resize events.
      */
     private void unsubscribe() {
-        terminalResizeEventHandler.unsubscribe(this::onResize);
+        terminalResizeEventHandler.unsubscribe(this::resize);
     }
 
     /**
      * Subscribe to resize events.
      */
     private void subscribe() {
-        terminalResizeEventHandler.subscribe(this::onResize);
+        terminalResizeEventHandler.subscribe(this::resize);
     }
 
     @Override

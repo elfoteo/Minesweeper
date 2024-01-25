@@ -59,7 +59,7 @@ public class GameInstance{
         return score;
     }
 
-    public boolean getRunning() {
+    public boolean isRunning() {
         return running;
     }
 

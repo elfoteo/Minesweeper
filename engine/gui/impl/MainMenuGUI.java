@@ -86,7 +86,9 @@ public class MainMenuGUI extends AbstractTerminalGUI {
                             if (difficulty == null){
                                 break;
                             }
-                            playAgain = uiManager.getGame().start(username, difficulty);
+                            GameGUI game = new GameGUI(uiManager, difficulty, username);
+                            openGUI(game);
+                            playAgain = game.playAgain();
                         }
                         while (playAgain);
                         break;

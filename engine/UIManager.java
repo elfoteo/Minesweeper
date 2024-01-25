@@ -53,7 +53,6 @@ public class UIManager {
     private final Panel mainPanel;
     private final TextGraphics textGraphics;
     public Leaderboard leaderboard;
-    private final Game game;
     private final OptionsInstance options;
     private MenuPopupWindow themesMenuWindow;
     private RadioBoxList<String> themesMenuRadioboxList;
@@ -86,7 +85,6 @@ public class UIManager {
         // To not show the panel
         mainWindow.setVisible(false);
         terminal.enterPrivateMode();
-        game = new Game(this);
         OptionsInstance oi = Options.readOptionsFromFile();
         // Intellij suggestion
         options = Objects.requireNonNullElseGet(oi, () ->
@@ -155,10 +153,6 @@ public class UIManager {
 
     public IGameTheme getTheme(){
         return selectedTheme;
-    }
-
-    public Game getGame() {
-        return game;
     }
 
     public boolean showDataCollectionWarning() throws IOException {
