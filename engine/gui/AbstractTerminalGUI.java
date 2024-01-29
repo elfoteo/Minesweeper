@@ -1,14 +1,19 @@
 package engine.gui;
 
+import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.terminal.Terminal;
 import engine.TerminalResizeEventHandler;
+import engine.UIManager;
 import engine.utils.Utils;
 
 import java.io.IOException;
 
 public class AbstractTerminalGUI implements ITerminalGUI {
     protected Screen screen;
+    protected TextGraphics textGraphics;
+    protected UIManager uiManager;
     private TerminalResizeEventHandler terminalResizeEventHandler;
     protected boolean resizePaused = false;
 
@@ -72,12 +77,14 @@ public class AbstractTerminalGUI implements ITerminalGUI {
 
     @Override
     public void onResize() {
-
+        // Gets called when the window gets resized
     }
 
     @Override
     public void draw() throws IOException {
-
+        // Fill the background with the theme background color
+        textGraphics.setBackgroundColor(uiManager.getThemeBackgroundColor());
+        textGraphics.fill(' ');
     }
 
     @Override

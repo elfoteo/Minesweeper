@@ -15,8 +15,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class SettingsGUI extends AbstractTerminalGUI {
-    private final UIManager uiManager;
-    private final TextGraphics textGraphics;
     private int selectedIndex = 0;
 
     /**

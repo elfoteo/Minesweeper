@@ -8,33 +8,38 @@ import java.io.IOException;
 public class InputHandler {
     private final Screen screen;
     private volatile KeyStroke lastChar;
-    private boolean[] threadRunning = {true};
-    private boolean[] handled = {false};
+    private Thread inputThread;
+    private boolean[] handled = new boolean[] {false};
 
-    public InputHandler(Screen screen){
+    public InputHandler(Screen screen) {
         this.screen = screen;
     }
 
-    public void startThread(){
-        threadRunning[0] = true;
-        new Thread(() -> {
-            while (threadRunning[0]){
+    public void startThread() {
+        inputThread = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    handled[0] = false;
                     lastChar = screen.readInput();
-                } catch (IOException ignore) {
+                    handled[0] = false;
+                } catch (IOException e) {
+
                 }
             }
-        }).start();
+        });
+        inputThread.start();
     }
 
-    public void stopThread(){
-        threadRunning[0] = false;
+    public void stopThread() {
+        inputThread.interrupt(); // Interrupt the input thread
+        try {
+            inputThread.join(); // Wait for inputThread to finish
+        } catch (InterruptedException e) {
+
+        }
     }
 
-    public KeyStroke handleInput(){
+    public KeyStroke handleInput() {
         if (!handled[0]){
-            
             handled[0] = true;
             return lastChar;
         }

@@ -16,8 +16,6 @@ import java.io.IOException;
  * GUI implementation for an "About" screen.
  */
 public class AboutGUI extends AbstractTerminalGUI {
-
-    private final TextGraphics textGraphics;
     private final long startTime = System.currentTimeMillis();
     private final boolean[] rgbEnabled = new boolean[]{true};
     private static final String GUI_TITLE = "About";
@@ -33,6 +31,7 @@ public class AboutGUI extends AbstractTerminalGUI {
         super(uiManager.getTerminal());
         this.screen = uiManager.getScreen();
         this.textGraphics = uiManager.getTextGraphics();
+        this.uiManager = uiManager;
     }
 
     @Override
@@ -90,11 +89,14 @@ public class AboutGUI extends AbstractTerminalGUI {
         if (rgbEnabled[0]){
             drawRainbow(completeText);
         } else {
+            textGraphics.setForegroundColor(uiManager.getThemeForeground());
+            textGraphics.setBackgroundColor(uiManager.getThemeBackgroundColor());
             drawNormal(completeText);
         }
 
         textGraphics.disableModifiers(SGR.BOLD);
-        textGraphics.setForegroundColor(TextColor.ANSI.WHITE);
+        textGraphics.setForegroundColor(uiManager.getThemeForeground());
+        textGraphics.setBackgroundColor(uiManager.getThemeBackgroundColor());
         textGraphics.putString(0, getTerminalHeight()-1, "Press \"Tab\" to toggle RGB");
         screen.refresh();
     }

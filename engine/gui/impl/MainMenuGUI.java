@@ -1,5 +1,6 @@
 package engine.gui.impl;
 
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
@@ -16,9 +17,7 @@ import engine.utils.Utils;
 import java.io.IOException;
 
 public class MainMenuGUI extends AbstractTerminalGUI {
-    private final UIManager uiManager;
     private final Terminal terminal;
-    private final TextGraphics textGraphics;
     private int selectedIndex = 0;
 
     /**

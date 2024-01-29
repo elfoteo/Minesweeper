@@ -27,13 +27,11 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class GameGUI extends AbstractTerminalGUI {
-    private final TextGraphics textGraphics;
     private final Terminal terminal;
     private final Panel mainPanel;
     private final MultiWindowTextGUI gui;
     private ScheduledExecutorService timer;
     private long startTime;
-    private final UIManager uiManager;
     private boolean playAgain = false;
     private final MinesweeperDifficulty difficulty;
     private final String username;
@@ -110,7 +108,6 @@ public class GameGUI extends AbstractTerminalGUI {
         inputHandler.startThread();
         while (gameInstance.isRunning()) {
             draw();
-            updateTimer();
             TerminalSize goalSize = new TerminalSize(difficultyInfo.second().first()*2 + 22, difficultyInfo.second().second() + 5);
             if (goalSize.getColumns() > getTerminalWidth() || goalSize.getRows() > getTerminalHeight()){
                 // If the terminal is too small, we need to ask the user to make it bigger to continue to play
@@ -183,7 +180,6 @@ public class GameGUI extends AbstractTerminalGUI {
     public void onResize() {
         super.onResize();
         gameInstance.recalculateGameBounds(uiManager.terminalResizeEventHandler.getLastKnownSize());
-        updateTimer();
     }
 
     private int getScreenWidth(){
@@ -248,6 +244,7 @@ public class GameGUI extends AbstractTerminalGUI {
                     textGraphics.setForegroundColor(gameTheme.getMinefieldFore());
                     textGraphics.setBackgroundColor(gameTheme.getMinefieldBack());
                 }
+
                 // Can happen if the player decides to continue the game, loosing score
                 if (cell.type == CellType.MINE){
                     // If the cell is a mine, then color it red
@@ -268,7 +265,7 @@ public class GameGUI extends AbstractTerminalGUI {
         Utils.drawRect(bounds.x-1, bounds.y-1,
                 bounds.width+2,
                 bounds.height+2, textGraphics);
-
+        updateTimer();
         screen.refresh();
     }
 
@@ -379,10 +376,6 @@ public class GameGUI extends AbstractTerminalGUI {
         String text = Utils.getGameTimerText(seconds, minutes, elapsedTime);
         uiManager.applyThemeColors(textGraphics);
         textGraphics.putString(0, 3, text);
-        // Refresh the screen to see the changes in real time
-        try {
-            screen.refresh();
-        } catch (Exception ignored) {}
     }
 
     private String getTimerRemainingTime(){
@@ -421,14 +414,6 @@ public class GameGUI extends AbstractTerminalGUI {
      * @return The system time when the timer is paused.
      */
     private long pauseTimer() {
-        // Ensure the timer is not null and not shut down
-        if (timer == null || timer.isShutdown()) {
-            return System.currentTimeMillis();
-        }
-
-        //if (timerTask != null) {
-        //    timerTask.cancel(false);
-        //}
         return System.currentTimeMillis();
     }
 

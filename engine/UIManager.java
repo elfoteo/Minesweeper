@@ -8,6 +8,7 @@ import com.googlecode.lanterna.graphics.SimpleTheme;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.Button;
+import com.googlecode.lanterna.gui2.Component;
 import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.Window;
@@ -68,6 +69,7 @@ public class UIManager {
         mainPanel = new Panel();
         mainWindow.setComponent(mainPanel);
         hints.add(Window.Hint.CENTERED);
+        hints.add(Window.Hint.NO_POST_RENDERING);
 
         mainWindow.setHints(hints);
 
@@ -229,16 +231,28 @@ public class UIManager {
     }
 
     public void updateTheme() {
+        // To update the window theme in real time
         try{
             List<IGameTheme> themes = ThemeManager.getThemes();
             // Necessary
             Thread.sleep(20);
             for (IGameTheme theme : themes){
                 if (theme.getThemeName().equals(themesMenuRadioboxList.getCheckedItem())){
+                    // Update the selected theme
                     selectedTheme = theme;
                 }
             }
+            // Apply the new theme to the window
             themesMenuWindow.setTheme(getWindowTheme());
+            // If the window component is a panel
+            if (themesMenuWindow.getComponent() instanceof Panel){
+                // For each component in the window
+                for (Component component : ((Panel)themesMenuWindow.getComponent()).getChildren()){
+                    // Update the single component theme
+                    component.setTheme(getWindowTheme());
+                }
+            }
+
         }
         catch (Exception ignored){
             // This is a secondary update theme thread, any exceptions can be safely ignored
@@ -630,10 +644,12 @@ public class UIManager {
      * @return The selected Minesweeper difficulty. Returns null if the user cancels the action.
      */
     public MinesweeperDifficulty getDifficulty() {
+        // Default value isn't important
         final MinesweeperDifficulty[] selectedDifficulty = {MinesweeperDifficulty.MEDIUM};
         MenuPopupWindow window = new MenuPopupWindow(mainPanel);
         Panel container = new Panel();
         window.setTheme(getWindowTheme());
+
         container.addComponent(new Label("Select the game difficulty:"));
         for (MinesweeperDifficulty difficulty : MinesweeperDifficulty.values()){
             String name = difficulty.name();
@@ -644,10 +660,10 @@ public class UIManager {
             });
             switch (difficulty){
                 // Set different colors depending on the difficulty
-                case EASY -> button.setTheme(new SimpleTheme(TextColor.ANSI.GREEN, TextColor.ANSI.DEFAULT, SGR.BOLD));
-                case MEDIUM -> button.setTheme(new SimpleTheme(new TextColor.RGB(255, 115, 0), TextColor.ANSI.DEFAULT, SGR.BOLD));
-                case HARD -> button.setTheme(new SimpleTheme(new TextColor.RGB(180, 0, 0), TextColor.ANSI.DEFAULT, SGR.BOLD));
-                case CUSTOM -> button.setTheme(new SimpleTheme(new TextColor.RGB(200, 200, 200), TextColor.ANSI.DEFAULT, SGR.BOLD));
+                case EASY -> button.setTheme(new SimpleTheme(TextColor.ANSI.GREEN, getThemeBackgroundColor(), SGR.BOLD));
+                case MEDIUM -> button.setTheme(new SimpleTheme(new TextColor.RGB(255, 115, 0), getThemeBackgroundColor(), SGR.BOLD));
+                case HARD -> button.setTheme(new SimpleTheme(new TextColor.RGB(180, 0, 0), getThemeBackgroundColor(), SGR.BOLD));
+                case CUSTOM -> button.setTheme(new SimpleTheme(new TextColor.RGB(200, 200, 200), getThemeBackgroundColor(), SGR.BOLD));
             }
             button.setPreferredSize(new TerminalSize(27, 1));
             container.addComponent(button);

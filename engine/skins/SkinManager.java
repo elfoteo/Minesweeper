@@ -22,6 +22,9 @@ public class SkinManager {
         skinClasses.add(getInstanceFor(StarsSkin.class));
         skinClasses.add(getInstanceFor(HeartsSkin.class));
         skinClasses.add(getInstanceFor(MysterySkin.class));
+        skinClasses.add(getInstanceFor(ASCIISkin.class));
+        skinClasses.add(getInstanceFor(DiamondSkin.class));
+        skinClasses.add(getInstanceFor(PixelSkin.class));
     }
 
     private static ISkin getInstanceFor(Class<? extends ISkin> toInstance) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {

@@ -16,11 +16,23 @@ public class ThemeManager {
         return gameThemeClasses;
     }
 
-    public static void registerThemes() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        gameThemeClasses.add(getInstanceFor(DefaultGameTheme.class));
-        gameThemeClasses.add(getInstanceFor(PurpleGameTheme.class));
-        gameThemeClasses.add(getInstanceFor(LimeGameTheme.class));
-        gameThemeClasses.add(getInstanceFor(AzureGameTheme.class));
+    public static void registerThemes() {
+        register(DefaultGameTheme.class);
+        register(PurpleGameTheme.class);
+        register(LimeGameTheme.class);
+        register(AzureGameTheme.class);
+        register(OceanGameTheme.class);
+        register(RustGameTheme.class);
+        register(BloodyGameTheme.class);
+        register(HalloweenGameTheme.class);
+        register(WhiteGameTheme.class);
+    }
+
+    private static void register(Class<? extends IGameTheme> theme){
+        try{
+            gameThemeClasses.add(getInstanceFor(theme));
+        }
+        catch (Exception ignore){}
     }
 
     private static IGameTheme getInstanceFor(Class<? extends IGameTheme> toInstance) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {

@@ -15,7 +15,6 @@ import java.util.List;
 
 public class LeaderboardGUI extends AbstractTerminalGUI {
     private final Leaderboard leaderboard;
-    private final TextGraphics textGraphics;
     // uiShowingLocal, false if showing global leaderboard, true if showing local leaderboard
     private boolean uiShowingLocal = false;
     private List<Leaderboard.User> globalUsers;
@@ -31,6 +30,7 @@ public class LeaderboardGUI extends AbstractTerminalGUI {
         this.leaderboard = uiManager.leaderboard;
         this.screen = uiManager.getScreen();
         this.textGraphics = uiManager.getTextGraphics();
+        this.uiManager = uiManager;
     }
 
     @Override
