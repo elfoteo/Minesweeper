@@ -26,6 +26,7 @@ import engine.themes.impl.DefaultGameTheme;
 import engine.utils.*;
 
 import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -438,16 +439,17 @@ public class UIManager {
         Label usernameLabel = new Label("Change username:");
         Label currentUsernameLabel = new Label(String.format("\"%s\"", getUsername()));
         // usernameSpace is used to keep the space between currentUsernameLabel and changeUsernameButton the same
-        EmptySpace usernameSpace = new EmptySpace(new TerminalSize(15-currentUsernameLabel.getText().length(), 1));
+        EmptySpace usernameSpace = new EmptySpace(new TerminalSize(25-currentUsernameLabel.getText().length(), 1));
         Button chageUsernameButton = new Button("Change", () -> {
             // Force to show the username popup
             if (getUsername(true) != null){
                 currentUsernameLabel.setText(String.format("\"%s\"", getUsername()));
                 // On username update, update the optionsInstance too
                 options.setUsername(getUsername());
-                usernameSpace.setPreferredSize(new TerminalSize(15-currentUsernameLabel.getText().length(), 1));
+                usernameSpace.setPreferredSize(new TerminalSize(25-currentUsernameLabel.getText().length(), 1));
             }
         });
+        chageUsernameButton.setTheme(getConfirmButtonTheme());
 
         container.addComponent(usernameLabel);
         Panel usernameOptions = new Panel(new LinearLayout(Direction.HORIZONTAL));
@@ -463,18 +465,52 @@ public class UIManager {
 
         // Font options
         container.addComponent(new EmptySpace(new TerminalSize(1, 1))); // Add some space
-        Panel fontOptionsSizePanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        fontOptionsSizePanel.addComponent(new Label("Font size:"));
-        int previousFontSize = options.getJsonFont().font().getSize();
+        Label fontOptionsLabel = new Label("Font Options:");
+        Label currentFontLabel = new Label(String.format("\"%s\"", options.getJsonFont().getFont().getName()));
+        if (options.getJsonFont().getFile() != null){
+            currentFontLabel.setText(String.format("\"%s\"", options.getJsonFont().getFile()));
+        }
+
+        EmptySpace selectedFontSpace = new EmptySpace(new TerminalSize(25-currentFontLabel.getText().length(), 1));
+        Button changeFontButton = new Button("Change", () -> {
+            // Show the font selection popup, showing the font popup will automatically update
+            // the font with the one selected by the user
+            String newFontName = showFontSelectionPopup();
+            if (newFontName.length() >= 20){
+                newFontName = String.format("\"%s...\"", newFontName.substring(0, 15));
+            }
+            else {
+                newFontName = String.format("\"%s\"", newFontName);
+            }
+            currentFontLabel.setText(newFontName);
+            selectedFontSpace.setPreferredSize(new TerminalSize(25-currentFontLabel.getText().length(), 1));
+        });
+        changeFontButton.setTheme(getConfirmButtonTheme());
+
+        container.addComponent(fontOptionsLabel);
+        Panel fontNameOptions = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        fontNameOptions.addComponent(currentFontLabel);
+        fontNameOptions.addComponent(selectedFontSpace); // Add space
+        fontNameOptions.addComponent(changeFontButton);
+        container.addComponent(fontNameOptions);
+
+
+        Panel fontSizeOptionsPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        fontSizeOptionsPanel.addComponent(new Label("Font size:"));
+        int previousFontSize = options.getJsonFont().getFont().getSize();
         // Set the initial content to the previous font size
-        TextBox fontOptionsSize = new TextBox(previousFontSize+"");
+        TextBox fontOptionsSize = new TextBox(String.valueOf(previousFontSize));
         // Accept only up to 2 digits, and the number must be divisible by 2
         fontOptionsSize.setValidationPattern(Pattern.compile("\\d{1,2}"));
-        fontOptionsSizePanel.addComponent(fontOptionsSize);
-        container.addComponent(fontOptionsSizePanel);
+        fontSizeOptionsPanel.addComponent(fontOptionsSize);
+        container.addComponent(fontSizeOptionsPanel);
         container.addComponent(new Label("Font size must be divisible by 2 and bigger then 10 smaller then 99"));
 
         // Exit button
+        container.addComponent(new EmptySpace(new TerminalSize(1, 1))); // Add some space
+        Label hintLabel = new Label("Use tab to move around");
+        hintLabel.addStyle(SGR.ITALIC);
+        container.addComponent(hintLabel);
         container.addComponent(new EmptySpace(new TerminalSize(1, 1))); // Add some space
         Button exitButton = new Button("Exit", window::close);
         exitButton.setTheme(getCancelButtonTheme());
@@ -486,7 +522,7 @@ public class UIManager {
         // Update options values
         options.setGrayOutNearbyCells(grayNearbyCells.isChecked(0));
         // Get the current font from options
-        Font currentFont = options.getJsonFont().font();
+        Font currentFont = options.getJsonFont().getFont();
 
         // Get the font name of the current font
         String fontName = currentFont.getName();
@@ -513,6 +549,9 @@ public class UIManager {
             showContinuePopup("Font size must be divisible by 2 and bigger then 10 smaller then 99.\nNo changes will be made.");
         }
         else{
+            if (options.getJsonFont().getFile() != null){
+                jsonFont.setFromFile(options.getJsonFont().getFile());
+            }
             options.setFont(jsonFont);
 
             if (newSize != previousFontSize){
@@ -525,10 +564,70 @@ public class UIManager {
         screen.clear();
     }
 
+    private String showFontSelectionPopup() {
+        MenuPopupWindow popupWindow = new MenuPopupWindow(mainPanel);
+        popupWindow.setTheme(getWindowTheme());
+        Panel popupContainer = new Panel();
+        popupContainer.addComponent(new Label("Select a font:"));
+        TerminalSize size = new TerminalSize(
+                26,
+                4
+        );
+        RadioBoxList<String> availableFonts = new RadioBoxList<>(size);
+        for (String item : FontManager.getFonts()){
+            // Add all the fonts
+            availableFonts.addItem(item);
+            // Check the selected one
+            if (item.equals(options.getJsonFont().getFont().getName()) || item.equals(options.getJsonFont().getFile())){
+                availableFonts.setCheckedItem(item);
+            }
+        }
+
+        popupContainer.addComponent(availableFonts);
+
+        Button okButton = new Button("Ok", popupWindow::close);
+        okButton.setPreferredSize(new TerminalSize(4, 1));
+        okButton.setTheme(getConfirmButtonTheme());
+        popupContainer.addComponent(new EmptySpace(new TerminalSize(1, 1)));
+        Label hintLabel = new Label("Use tab to move around");
+        hintLabel.addStyle(SGR.ITALIC);
+        popupContainer.addComponent(hintLabel);
+        popupContainer.addComponent(okButton);
+        popupWindow.setComponent(popupContainer);
+        centerWindow(popupWindow);
+        gui.addWindowAndWait(popupWindow);
+        // Window got closed
+        try{
+            for (String item : FontManager.getFonts()){
+                if (availableFonts.isChecked(item)){
+                    int fontSize = options.getJsonFont().getFont().getSize();
+                    Font font;
+                    if (item.endsWith(".ttf")){
+                        font = Font.createFont(
+                                Font.TRUETYPE_FONT, new File(Constants.fontsDir+item)).deriveFont((float)fontSize);
+                    }
+                    else{
+                        font = new Font(item, Font.PLAIN, fontSize);
+                    }
+                    JsonFont jsonFont = new JsonFont(font);
+                    if (item.endsWith(".ttf")){
+                        jsonFont.setFromFile(item);
+                    }
+                    options.setFont(jsonFont);
+                    return item;
+                }
+            }
+        }
+        catch (Exception ignore){
+
+        }
+        return "Courier New";
+    }
+
     /**
      * Displays a menu for the user to select the game difficulty.
      *
-     * @return The selected Minesweeper difficulty. Returns {@code null} if the user cancels the action.
+     * @return The selected Minesweeper difficulty. Returns null if the user cancels the action.
      */
     public MinesweeperDifficulty getDifficulty() {
         final MinesweeperDifficulty[] selectedDifficulty = {MinesweeperDifficulty.MEDIUM};

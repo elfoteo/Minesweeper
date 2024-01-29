@@ -59,9 +59,12 @@ public class SettingsGUI extends AbstractTerminalGUI {
             } else if (choice.getKeyType() == KeyType.Enter) {
                 switch (Constants.settingsMenuOptions[selectedIndex]) {
                     case "Skins":
+                        resizePaused = true;
                         uiManager.showSkinsMenu();
+                        resizePaused = false;
                         break;
                     case "Themes":
+                        resizePaused = true;
                         ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
                         // Schedule a timer task to update the theme every 100 milliseconds
                         ScheduledFuture<?> timerTask = timer.scheduleAtFixedRate(uiManager::updateTheme, 0, 100, TimeUnit.MILLISECONDS);
@@ -77,10 +80,13 @@ public class SettingsGUI extends AbstractTerminalGUI {
                         // If all is fine, cancel the timer
                         timerTask.cancel(true);
                         timer.shutdown();
+                        resizePaused = false;
                         break;
                     case "Options":
                         // TODO: Music options
+                        resizePaused = true;
                         uiManager.showOptions();
+                        resizePaused = false;
                         break;
                     case "Back":
                         running = false;

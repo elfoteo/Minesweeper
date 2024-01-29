@@ -22,10 +22,20 @@ public class Program {
     public static void main(String[] args) throws IOException {
         Terminal terminal;
         try{
+			// List of fonts:
+			// Courier New
+			// Cascadia Code
+			// Cascadia Mono
+			// Consolas
+			// Lucida Sans Typewriter
+
+
 			// Create factory
 			DefaultTerminalFactory factory = new DefaultTerminalFactory();
 			factory.setTerminalEmulatorTitle("Minesweeper");
 
+			// Register the fonts
+			FontManager.registerFonts();
 			// Load the font configuration
 			factory.setTerminalEmulatorFontConfiguration(FontManager.getFontConfiguration());
 

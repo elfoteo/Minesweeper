@@ -65,10 +65,11 @@ How to play:
  - To win you need to flag all mines correctly
  
 If you uncover a mine you can respawn up to 3 times if you have enough score""";
-
-    public static final String dataCollectionAcceptedFile = "data/data_collection.txt";
-    public static final String skinFile = "data/skin.dat";
-    public static final String optionsFile = "data/options.json";
-    public static final String themeFile = "data/theme.dat";
-    public static final String localLeaderboardFile = "data/local_leaderboard.json";
+    public static final String appDataDir = "data/";
+    public static final String dataCollectionAcceptedFile = appDataDir+"data_collection.txt";
+    public static final String skinFile = appDataDir+"skin.dat";
+    public static final String optionsFile = appDataDir+"options.json";
+    public static final String themeFile = appDataDir+"theme.dat";
+    public static final String localLeaderboardFile = appDataDir+"local_leaderboard.json";
+    public static final String fontsDir = appDataDir+"fonts/";
 }
