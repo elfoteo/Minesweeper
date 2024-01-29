@@ -11,13 +11,10 @@ import com.googlecode.lanterna.gui2.Button;
 import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.Window;
-import com.googlecode.lanterna.input.KeyStroke;
-import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.Terminal;
 import engine.gui.impl.MainMenuGUI;
-import engine.gui.impl.SettingsGUI;
 import engine.options.Options;
 import engine.options.OptionsInstance;
 import engine.skins.ISkin;
@@ -28,6 +25,7 @@ import engine.themes.ThemeManager;
 import engine.themes.impl.DefaultGameTheme;
 import engine.utils.*;
 
+import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,16 +33,10 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 public class UIManager {
-    private final String[] menuOptions = new String[] {"Play", "Leaderboard", "Settings", "About", "Exit"};
-    private int selectedIndex = 0;
     public static ISkin selectedSkin = new DefaultSkin();
     public static IGameTheme selectedTheme = new DefaultGameTheme();
     private final Terminal terminal;
@@ -64,6 +56,7 @@ public class UIManager {
         terminal.addResizeListener(terminalResizeEventHandler);
 
         screen = new TerminalScreen(terminal);
+
         textGraphics = screen.newTextGraphics();
         leaderboard = new Leaderboard(screen, textGraphics);
         Panel guiBackground = new Panel();
@@ -88,7 +81,7 @@ public class UIManager {
         OptionsInstance oi = Options.readOptionsFromFile();
         // Intellij suggestion
         options = Objects.requireNonNullElseGet(oi, () ->
-                new OptionsInstance("null", true)
+                new OptionsInstance("null", true, new JsonFont(FontManager.getDefaultFont()))
         );
     }
     public Terminal getTerminal() {
@@ -411,6 +404,28 @@ public class UIManager {
         return continuePressed[0];
     }
 
+    public void showContinuePopup(String message) {
+        MenuPopupWindow window = new MenuPopupWindow(mainPanel);
+        window.setTheme(getWindowTheme());
+        Panel panel = new Panel();
+        Panel buttonsPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
+
+        Button continueButton = new Button("Continue", window::close);
+        continueButton.setTheme(getConfirmButtonTheme());
+        continueButton.setPreferredSize(new TerminalSize(continueButton.getLabel().length()+2, 1));
+        continueButton.setPosition(new TerminalPosition(0, 5));
+        buttonsPanel.addComponent(continueButton);
+
+        Label textBox = new Label(message);
+
+        panel.addComponent(textBox);
+        panel.addComponent(buttonsPanel);
+
+        window.setComponent(panel);
+        centerWindow(window);
+        gui.addWindowAndWait(window);
+    }
+
     public void showOptions() {
         screen.clear();
         MenuPopupWindow window = new MenuPopupWindow(mainPanel);
@@ -445,17 +460,68 @@ public class UIManager {
         CheckBoxList<String> grayNearbyCells = new CheckBoxList<>();
         grayNearbyCells.addItem("Gray out nearby cells", options.isGrayOutNearbyCells());
         container.addComponent(grayNearbyCells);
+
+        // Font options
+        container.addComponent(new EmptySpace(new TerminalSize(1, 1))); // Add some space
+        Panel fontOptionsSizePanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        fontOptionsSizePanel.addComponent(new Label("Font size:"));
+        int previousFontSize = options.getJsonFont().font().getSize();
+        // Set the initial content to the previous font size
+        TextBox fontOptionsSize = new TextBox(previousFontSize+"");
+        // Accept only up to 2 digits, and the number must be divisible by 2
+        fontOptionsSize.setValidationPattern(Pattern.compile("\\d{1,2}"));
+        fontOptionsSizePanel.addComponent(fontOptionsSize);
+        container.addComponent(fontOptionsSizePanel);
+        container.addComponent(new Label("Font size must be divisible by 2 and bigger then 10 smaller then 99"));
+
         // Exit button
         container.addComponent(new EmptySpace(new TerminalSize(1, 1))); // Add some space
         Button exitButton = new Button("Exit", window::close);
         exitButton.setTheme(getCancelButtonTheme());
         container.addComponent(exitButton);
 
-
         window.setComponent(container);
         centerWindow(window);
         gui.addWindowAndWait(window);
+        // Update options values
         options.setGrayOutNearbyCells(grayNearbyCells.isChecked(0));
+        // Get the current font from options
+        Font currentFont = options.getJsonFont().font();
+
+        // Get the font name of the current font
+        String fontName = currentFont.getName();
+
+        // Get the font size specified in the fontOptionsSize text field
+        // and parse it to an integer.
+        // If fails set to the previous size
+        int newSize;
+        try{
+            newSize = Integer.parseInt(fontOptionsSize.getText());
+        }
+        catch (NumberFormatException ignore){
+            newSize = previousFontSize;
+        }
+
+        // Create a new font with the same font name, with Plain style, and the new size
+        Font newFont = new Font(fontName, Font.PLAIN, newSize);
+
+        // Create a new JsonFont object with the new font
+        JsonFont jsonFont = new JsonFont(newFont);
+
+        // Set the option font to the new JsonFont object with the updated font
+        if (newSize < 10 || newSize > 99 || newSize % 2 != 0) {
+            showContinuePopup("Font size must be divisible by 2 and bigger then 10 smaller then 99.\nNo changes will be made.");
+        }
+        else{
+            options.setFont(jsonFont);
+
+            if (newSize != previousFontSize){
+                // Display a popup telling the user that to update the font they need to restart the app
+                showContinuePopup("To make the changes take effect, please restart the game.");
+            }
+        }
+
+
         screen.clear();
     }
 
@@ -696,14 +762,6 @@ public class UIManager {
         });
         updateThread.start();
 
-        Button cancelButton = new Button("Close", () -> {
-            running.set(false);
-            popupWindow.close();
-        });
-        cancelButton.setPreferredSize(new TerminalSize(7, 1));
-        cancelButton.setTheme(getCancelButtonTheme());
-
-        popupContainer.addComponent(cancelButton);
         popupWindow.setComponent(popupContainer);
         centerWindow(popupWindow);
         gui.addWindowAndWait(popupWindow);

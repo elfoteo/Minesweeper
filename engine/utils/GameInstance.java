@@ -5,6 +5,7 @@ import com.googlecode.lanterna.screen.Screen;
 import engine.Minesweeper;
 
 import java.awt.*;
+import java.util.Objects;
 
 public class GameInstance{
     private int respawnTimes;
@@ -19,6 +20,8 @@ public class GameInstance{
     private final MinesweeperDifficulty difficulty;
     private GameStage gameStage;
     private final String username;
+    private final Tuple<Integer, Tuple<Integer, Integer>> difficultyInfo;
+
     public GameInstance(Screen screen, MinesweeperDifficulty difficulty, Tuple<Integer, Tuple<Integer, Integer>> difficultyInfo, String username) {
         minesweeper = new Minesweeper(difficultyInfo.second().first(), difficultyInfo.second().second(), difficultyInfo.first());
         // Create a Rectangle for game bounds, centered on the screen
@@ -44,6 +47,7 @@ public class GameInstance{
         gameStage = GameStage.IN_PROGRESS;
         this.difficulty = difficulty;
         this.username =  username;
+        this.difficultyInfo = difficultyInfo;
     }
 
     // Getters
@@ -136,7 +140,7 @@ public class GameInstance{
      * Recalculates the game bounds based on the current screen size and field dimensions.
      * The game bounds determine the position and size of the playable game area within the screen.
      *
-     * @param screen The Screen object representing the terminal screen.
+     * @param newSize The new size for the game bounds.
      */
     public void recalculateGameBounds(TerminalSize newSize) {
         // Calculate the new x-coordinate for the top-left corner of the game area
@@ -159,5 +163,9 @@ public class GameInstance{
                 minesweeper.getFieldWidth() * 2 - 1,
                 minesweeper.getFieldHeight()
         );
+    }
+
+    public Tuple<Integer, Tuple<Integer, Integer>> getDifficultyInfo() {
+        return difficultyInfo;
     }
 }

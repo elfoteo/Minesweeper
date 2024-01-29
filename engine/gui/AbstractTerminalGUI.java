@@ -3,7 +3,6 @@ package engine.gui;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.terminal.Terminal;
 import engine.TerminalResizeEventHandler;
-import engine.UIManager;
 import engine.utils.Utils;
 
 import java.io.IOException;

@@ -12,19 +12,10 @@ public class TerminalResizeEventHandler implements TerminalResizeListener {
     private TerminalSize lastKnownSize;
 
     // List of runnables to be executed on resize events
-    private List<Runnable> resizeRunnables = new ArrayList<>();
+    private final List<Runnable> resizeRunnables = new ArrayList<>();
 
     public TerminalResizeEventHandler(TerminalSize initialSize) {
         this.lastKnownSize = initialSize;
-    }
-
-    public synchronized boolean isTerminalResized() {
-        if (this.wasResized) {
-            this.wasResized = false;
-            return true;
-        } else {
-            return false;
-        }
     }
 
     public TerminalSize getLastKnownSize() {

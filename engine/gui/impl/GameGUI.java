@@ -10,7 +10,6 @@ import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
-import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.terminal.Terminal;
 import engine.Leaderboard;
 import engine.Minesweeper;
@@ -21,6 +20,7 @@ import engine.utils.*;
 
 import java.awt.*;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -32,7 +32,6 @@ public class GameGUI extends AbstractTerminalGUI {
     private final Panel mainPanel;
     private final MultiWindowTextGUI gui;
     private ScheduledExecutorService timer;
-    private ScheduledFuture<?> timerTask;
     private long startTime;
     private final UIManager uiManager;
     private boolean playAgain = false;
@@ -41,6 +40,7 @@ public class GameGUI extends AbstractTerminalGUI {
     private GameInstance gameInstance;
     private Minesweeper minesweeper;
     private IGameTheme gameTheme;
+    private InputHandler inputHandler;
 
     /**
      * Constructor for the GameGUI.
@@ -63,6 +63,9 @@ public class GameGUI extends AbstractTerminalGUI {
     public void show() throws IOException {
         super.show();
         screen.clear();
+        if (Objects.equals(username, "null")){
+            uiManager.getUsername();
+        }
         // Prepare game
         // Get the information for the difficulty
         Tuple<Integer, Tuple<Integer, Integer>> difficultyInfo;
@@ -71,6 +74,7 @@ public class GameGUI extends AbstractTerminalGUI {
             // ask if it wants to continue as this won't count towards the leaderboard
             if (showCustomDifficultyWarning()){
                 playAgain = true;
+                return;
             }
             // Show the dialog asking for grid size and mines in the custom difficulty
             difficultyInfo = uiManager.askCustomDifficulty();
@@ -79,6 +83,7 @@ public class GameGUI extends AbstractTerminalGUI {
                     difficultyInfo.second().first() <= -1 ||
                     difficultyInfo.second().second() <= -1){
                 playAgain = true;
+                return;
             }
         }
         else{
@@ -95,39 +100,65 @@ public class GameGUI extends AbstractTerminalGUI {
         gameInstance = new GameInstance(screen, difficulty, difficultyInfo, username);
         minesweeper = gameInstance.getMinesweeper();
         gameTheme = uiManager.getTheme();
+        inputHandler = new InputHandler(screen);
         // Start timer
         startTime = System.currentTimeMillis();
         timer = Executors.newSingleThreadScheduledExecutor();
         // Schedule timer update every 500 milliseconds (half second)
-        timerTask = timer.scheduleAtFixedRate(this::updateTimer, 0, 500, TimeUnit.MILLISECONDS);
-
+        //timerTask = timer.scheduleAtFixedRate(this::updateTimer, 0, 500, TimeUnit.MILLISECONDS);
+        
+        inputHandler.startThread();
         while (gameInstance.isRunning()) {
             draw();
+            updateTimer();
+            TerminalSize goalSize = new TerminalSize(difficultyInfo.second().first()*2 + 22, difficultyInfo.second().second() + 5);
+            if (goalSize.getColumns() > getTerminalWidth() || goalSize.getRows() > getTerminalHeight()){
+                // If the terminal is too small, we need to ask the user to make it bigger to continue to play
+                long sysTime = pauseTimer();
+                resizePaused = true;
+                inputHandler.stopThread();
+                uiManager.waitForTerminalResize(
+                        "Current size: %sx%s\nRequired size: " + goalSize.getColumns() + "x" + goalSize.getRows()+"\nThe terminal is too small to play a game with the specified size.\nPlease resize your terminal.",
+                        new TerminalSize(goalSize.getColumns(), goalSize.getRows())
+                );
+                inputHandler.startThread();
+                resizePaused = false;
+                resumeTimer(sysTime);
+                // The screen got resized, but the resize listener was paused,
+                // so we manually call the resize event to resize the game grid
+                onResize();
+            }
 
-            KeyStroke choice = screen.readInput();
-            Rectangle bounds = gameInstance.getGameBounds();
-            switch (choice.getKeyType()) {
-                // Handle arrow movement
-                case ArrowUp -> handleArrowMovement(gameInstance, bounds, -1, 0);
-                case ArrowDown -> handleArrowMovement(gameInstance, bounds, 1, 0);
-                case ArrowLeft -> handleArrowMovement(gameInstance, bounds, 0, -2);
-                case ArrowRight -> handleArrowMovement(gameInstance, bounds, 0, 2);
-                case Character -> handleKeypress(choice, minesweeper, gameInstance);
-                case Enter -> handleEnter(minesweeper, gameInstance);
-                case EOF, Escape -> handleEOFOrEscape(choice, gameInstance);
-            }
-            // After processing witch move to make let's check if the game ended
-            gameInstance.setGameStage(minesweeper.getGameStage());
 
-            if (gameInstance.getGameStage() == GameStage.WON){
-                showGameWonMessage(gameInstance, gameInstance.getUsername(), gameInstance.getDifficulty());
+            KeyStroke choice = inputHandler.handleInput();
+            if (choice != null){
+                Rectangle bounds = gameInstance.getGameBounds();
+                switch (choice.getKeyType()) {
+                    // Handle arrow movement
+                    case ArrowUp -> handleArrowMovement(gameInstance, bounds, -1, 0);
+                    case ArrowDown -> handleArrowMovement(gameInstance, bounds, 1, 0);
+                    case ArrowLeft -> handleArrowMovement(gameInstance, bounds, 0, -2);
+                    case ArrowRight -> handleArrowMovement(gameInstance, bounds, 0, 2);
+                    case Character -> handleKeypress(choice, minesweeper, gameInstance);
+                    case Enter -> handleEnter(minesweeper, gameInstance);
+                    case EOF, Escape -> handleEOFOrEscape(choice, gameInstance);
+                }
+                // After processing witch move to make let's check if the game ended
+                gameInstance.setGameStage(minesweeper.getGameStage());
+
+                if (gameInstance.getGameStage() == GameStage.WON){
+                    inputHandler.stopThread();
+                    showGameWonMessage(gameInstance, gameInstance.getUsername(), gameInstance.getDifficulty());
+                    inputHandler.startThread();
+                }
+                // If the user wants to play again, then the game has ended
+                if (gameInstance.isGameEnded()){
+                    // Stop the game
+                    gameInstance.setRunning(false);
+                    break;
+                }
             }
-            // If the user wants to play again, then the game has ended
-            if (gameInstance.isGameEnded()){
-                // Stop the game
-                gameInstance.setRunning(false);
-                break;
-            }
+            Utils.waitFor(10);
         }
         onClose();
     }
@@ -140,6 +171,7 @@ public class GameGUI extends AbstractTerminalGUI {
         // Clear screen
         screen.setCursorPosition(new TerminalPosition(0, 0));
         screen.clear();
+        inputHandler.stopThread();
         playAgain = gameInstance.getPlayAgain();
     }
 
@@ -310,10 +342,14 @@ public class GameGUI extends AbstractTerminalGUI {
             // The player can continue playing only if it hasn't already respawned more than 3 times and
             // has more then 9 score
             if (rt < 3 && gameInstance.getScore() >= 10){
+                inputHandler.stopThread();
                 continueButtonPress = uiManager.showGameEndPopup(String.format(Constants.lossMessage, gameInstance.getScore()), gameInstance, true, -10*(rt+1));
+                inputHandler.startThread();
             }
             else{
+                inputHandler.stopThread();
                 continueButtonPress = uiManager.showGameEndPopup(String.format(Constants.lossMessage, gameInstance.getScore()), gameInstance, false, 0);
+                inputHandler.startThread();
             }
 
             if (continueButtonPress){
@@ -324,6 +360,7 @@ public class GameGUI extends AbstractTerminalGUI {
                 resumeTimer(sysTime);
             }
             else {
+                inputHandler.stopThread();
                 stopTimer();
                 gameInstance.setGameEnded(true);
             }
@@ -357,9 +394,9 @@ public class GameGUI extends AbstractTerminalGUI {
     }
 
     private void stopTimer(){
-        if (timerTask != null && !timerTask.isCancelled()) {
-            timerTask.cancel(true);
-        }
+        //if (timerTask != null && !timerTask.isCancelled()) {
+        //    timerTask.cancel(true);
+        //}
         timer.shutdown();
     }
 
@@ -375,7 +412,7 @@ public class GameGUI extends AbstractTerminalGUI {
         }
 
         startTime = startTime + (System.currentTimeMillis() - sysTime);
-        timerTask = timer.scheduleAtFixedRate(this::updateTimer, 0, 500, TimeUnit.MILLISECONDS);
+        //timerTask = timer.scheduleAtFixedRate(this::updateTimer, 0, 500, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -389,17 +426,20 @@ public class GameGUI extends AbstractTerminalGUI {
             return System.currentTimeMillis();
         }
 
-        if (timerTask != null) {
-            timerTask.cancel(false);
-        }
+        //if (timerTask != null) {
+        //    timerTask.cancel(false);
+        //}
         return System.currentTimeMillis();
     }
 
     private void handleEOFOrEscape(KeyStroke choice, GameInstance gameInstance) {
         if (choice.getKeyType() == KeyType.Escape) {
+            inputHandler.stopThread();
             showPauseMenu(gameInstance);
+            inputHandler.startThread();
         } else {
             gameInstance.setRunning(false);
+            inputHandler.stopThread();
         }
     }
 

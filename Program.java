@@ -1,13 +1,11 @@
-import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
-import com.googlecode.lanterna.terminal.SimpleTerminalResizeListener;
 import com.googlecode.lanterna.terminal.Terminal;
-import com.googlecode.lanterna.terminal.swing.TerminalEmulatorColorConfiguration;
-import com.googlecode.lanterna.terminal.swing.TerminalEmulatorPalette;
-import engine.TerminalResizeEventHandler;
+import com.googlecode.lanterna.terminal.swing.AWTTerminalFontConfiguration;
+import com.googlecode.lanterna.terminal.swing.SwingTerminalFontConfiguration;
 import engine.UIManager;
 import engine.skins.SkinManager;
 import engine.themes.ThemeManager;
+import engine.utils.FontManager;
 import engine.utils.Utils;
 
 import java.awt.*;
@@ -27,6 +25,9 @@ public class Program {
 			// Create factory
 			DefaultTerminalFactory factory = new DefaultTerminalFactory();
 			factory.setTerminalEmulatorTitle("Minesweeper");
+
+			// Load the font configuration
+			factory.setTerminalEmulatorFontConfiguration(FontManager.getFontConfiguration());
 
 			// Create terminal
 			terminal = factory.createTerminal();
