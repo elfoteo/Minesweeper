@@ -83,6 +83,11 @@ public class AbstractTerminalGUI implements ITerminalGUI {
     @Override
     public void draw() throws IOException {
         // Fill the background with the theme background color
+        fillBackground();
+    }
+
+    protected void fillBackground(){
+        // Set's the background color to the theme background and fills it
         textGraphics.setBackgroundColor(uiManager.getThemeBackgroundColor());
         textGraphics.fill(' ');
     }

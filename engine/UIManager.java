@@ -81,11 +81,8 @@ public class UIManager {
         // To not show the panel
         mainWindow.setVisible(false);
         terminal.enterPrivateMode();
-        OptionsInstance oi = Options.readOptionsFromFile();
-        // Intellij suggestion
-        options = Objects.requireNonNullElseGet(oi, () ->
-                new OptionsInstance("null", true, new JsonFont(FontManager.getDefaultFont()))
-        );
+        // Load the options
+        options = Options.readOptionsFromFile();
     }
     public Terminal getTerminal() {
         return terminal;
@@ -133,6 +130,10 @@ public class UIManager {
 
     public SimpleTheme getCancelButtonTheme(){
         return new SimpleTheme(TextColor.ANSI.RED, selectedTheme.getBackgroundColor(), SGR.BOLD);
+    }
+
+    public SimpleTheme getDisabledButtonTheme(){
+        return new SimpleTheme(TextColor.ANSI.BLACK_BRIGHT, selectedTheme.getBackgroundColor(), SGR.BOLD);
     }
 
     public void applyThemeColors(TextGraphics textGraphics){
@@ -484,7 +485,8 @@ public class UIManager {
         if (options.getJsonFont().getFile() != null){
             currentFontLabel.setText(String.format("\"%s\"", options.getJsonFont().getFile()));
         }
-
+        // Store the current font to check later if the font has changed
+        String oldFont = currentFontLabel.getText();
         EmptySpace selectedFontSpace = new EmptySpace(new TerminalSize(25-currentFontLabel.getText().length(), 1));
         Button changeFontButton = new Button("Change", () -> {
             // Show the font selection popup, showing the font popup will automatically update
@@ -560,7 +562,12 @@ public class UIManager {
 
         // Set the option font to the new JsonFont object with the updated font
         if (newSize < 10 || newSize > 99 || newSize % 2 != 0) {
-            showContinuePopup("Font size must be divisible by 2 and bigger then 10 smaller then 99.\nNo changes will be made.");
+            String message = "Font size must be divisible by 2 and bigger then 10 smaller then 99.\nNo changes will be made to the font size.";
+            if (!Objects.equals(oldFont, currentFontLabel.getText())){
+                // Display a popup telling the user that to update the font they need to restart the app
+                message += "\nOnly the font style will be changed.\nTo make the changes take effect, please restart the game.";
+            }
+            showContinuePopup(message);
         }
         else{
             if (options.getJsonFont().getFile() != null){
@@ -568,7 +575,7 @@ public class UIManager {
             }
             options.setFont(jsonFont);
 
-            if (newSize != previousFontSize){
+            if (newSize != previousFontSize || !Objects.equals(oldFont, currentFontLabel.getText())){
                 // Display a popup telling the user that to update the font they need to restart the app
                 showContinuePopup("To make the changes take effect, please restart the game.");
             }
@@ -711,7 +718,7 @@ public class UIManager {
      */
     private String getUsername(boolean force) {
         final String[] username = {""};
-        if (!Objects.equals(options.getUsername(), "null") && !force){
+        if (options.isUsernameValid() && !force){
             return options.getUsername();
         }
 
@@ -720,12 +727,12 @@ public class UIManager {
         Panel container = new Panel();
         Panel textPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
         Panel buttonsPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        textPanel.addComponent(new Label("Username: "));
+        textPanel.addComponent(new Label("Username:"));
         TextBox userBox = new TextBox("");
 
         Button enterButton = new Button("Confirm",
                 () -> {
-                    if (userBox.getText().length() <= 10){
+                    if (OptionsInstance.isUsernameValid(userBox.getText())){
                         // If the username is of the correct length, close the window and save the username
                         options.setUsername(userBox.getText());
                         username[0] = userBox.getText();
@@ -733,7 +740,7 @@ public class UIManager {
                     }
                     else{
                         // Show username too long popup
-                        displayPopupWindow(window, "Error, username too long");
+                        showContinuePopup("Error, invalid username.\nThe username must be shorter then 10 characters and longer then 3");
                     }
                 });
         enterButton.setTheme(getConfirmButtonTheme());
@@ -741,7 +748,14 @@ public class UIManager {
             username[0] = null;
             window.close();
         });
-        cancelButton.setTheme(getCancelButtonTheme());
+        // Disable the cancel button if the username is invalid
+        cancelButton.setEnabled(options.isUsernameValid());
+        if (!options.isUsernameValid()){
+            cancelButton.setTheme(getDisabledButtonTheme());
+        }
+        else {
+            cancelButton.setTheme(getCancelButtonTheme());
+        }
         textPanel.addComponent(userBox);
         buttonsPanel.addComponent(enterButton);
         buttonsPanel.addComponent(cancelButton);

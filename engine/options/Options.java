@@ -3,14 +3,22 @@ package engine.options;
 import engine.utils.Constants;
 import engine.utils.FontManager;
 import engine.utils.JsonFont;
-import engine.utils.Utils;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+/**
+ * Utility class for managing game options.
+ */
 public class Options {
+
+    /**
+     * Reads game options from a JSON file.
+     *
+     * @return The options instance read from the file, or a default options instance if an error occurs.
+     */
     public static OptionsInstance readOptionsFromFile() {
         try {
             String content = new String(Files.readAllBytes(Paths.get(Constants.optionsFile)));
@@ -20,13 +28,9 @@ public class Options {
                     json.getBoolean("grayOutNearbyCells"),
                     JsonFont.fromString(json.get("font").toString())
             );
-        } catch (Exception e) {
+        } catch (IOException | org.json.JSONException e) {
             // Any error loading the config create a new one from default
-            OptionsInstance oi = new OptionsInstance(
-                    "null",
-                    true,
-                    new JsonFont(FontManager.getDefaultFont())
-            );
+            OptionsInstance oi = getDefaultOptions();
             // Save it
             saveOptionsToFile(oi);
             // Return it
@@ -34,6 +38,24 @@ public class Options {
         }
     }
 
+    /**
+     * Gets the default game options.
+     *
+     * @return The default options instance.
+     */
+    private static OptionsInstance getDefaultOptions(){
+        return new OptionsInstance(
+                "-",
+                true,
+                new JsonFont(FontManager.getDefaultFont())
+        );
+    }
+
+    /**
+     * Saves the given options instance to a JSON file.
+     *
+     * @param optionsInstance The option instance to be saved.
+     */
     public static void saveOptionsToFile(OptionsInstance optionsInstance) {
         JSONObject json = new JSONObject();
         json.put("username", optionsInstance.getUsername());

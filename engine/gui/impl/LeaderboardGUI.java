@@ -101,6 +101,7 @@ public class LeaderboardGUI extends AbstractTerminalGUI {
 
     private void loadData() throws IOException {
         screen.clear();
+        fillBackground();
         textGraphics.putString(0, 0, "Loading data...");
         screen.refresh();
         globalUsers = leaderboard.getGlobalUsers();
@@ -116,7 +117,7 @@ public class LeaderboardGUI extends AbstractTerminalGUI {
     }
 
     private void showGlobalLeaderboard(List<Leaderboard.User> globalUsers, int x, int y, int width, int height){
-        String title = "Global Leaderboard";
+        String title = "\u25C4 Global Leaderboard \u25BA";
         textGraphics.putString(x+width/2-title.length()/2, y+1, title);
         if (globalUsers == null){
             String subtitle = "Connection error";
@@ -145,7 +146,7 @@ public class LeaderboardGUI extends AbstractTerminalGUI {
     }
 
     private void showLocalLeaderboard(List<Leaderboard.User> localUsers, int x, int y, int width, int height){
-        String title = "Local Leaderboard";
+        String title = "\u25C4  Local Leaderboard \u25BA";
         textGraphics.putString(x+width/2-title.length()/2, y+1, title);
         if (localUsers == null){
             // This shouldn't happen
