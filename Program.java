@@ -3,6 +3,7 @@ import com.googlecode.lanterna.terminal.Terminal;
 import com.googlecode.lanterna.terminal.swing.AWTTerminalFontConfiguration;
 import com.googlecode.lanterna.terminal.swing.SwingTerminalFontConfiguration;
 import engine.UIManager;
+import engine.music.MusicManager;
 import engine.skins.SkinManager;
 import engine.themes.ThemeManager;
 import engine.utils.FontManager;
@@ -47,6 +48,8 @@ public class Program {
 			SkinManager.registerSkins();
 			// Register the themes
 			ThemeManager.registerThemes();
+			// Register music
+			MusicManager.register();
 
             UIManager uiManager = new UIManager(terminal);
 			uiManager.showMainScreen();

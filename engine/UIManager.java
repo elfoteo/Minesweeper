@@ -16,6 +16,8 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.Terminal;
 import engine.gui.impl.MainMenuGUI;
+import engine.music.MusicManager;
+import engine.music.MusicPlayer;
 import engine.options.Options;
 import engine.options.OptionsInstance;
 import engine.skins.ISkin;
@@ -32,6 +34,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.sql.SQLInvalidAuthorizationSpecException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -52,6 +55,7 @@ public class UIManager {
     private RadioBoxList<String> themesMenuRadioboxList;
     private final List<Window.Hint> hints = new ArrayList<>();
     public TerminalResizeEventHandler terminalResizeEventHandler;
+    private MusicPlayer musicPlayer;
     public UIManager(Terminal terminal) throws IOException {
         this.terminal = terminal;
         terminalResizeEventHandler = new TerminalResizeEventHandler(terminal.getTerminalSize());
@@ -81,11 +85,18 @@ public class UIManager {
         // To not show the panel
         mainWindow.setVisible(false);
         terminal.enterPrivateMode();
-        OptionsInstance oi = Options.readOptionsFromFile();
-        // Intellij suggestion
-        options = Objects.requireNonNullElseGet(oi, () ->
-                new OptionsInstance("null", true, new JsonFont(FontManager.getDefaultFont()))
-        );
+        // Load the options
+        options = Options.readOptionsFromFile();
+        // Set up music
+        musicPlayer = MusicManager.getMusicPlayer();
+        try{
+            musicPlayer.changeSoundtrack(options.getSoundtrackFile());
+        }
+        catch (Exception ignore){
+            Utils.Debug(Utils.exceptionToString(ignore));
+        }
+        musicPlayer.setVolumeToPercentage(Utils.boostAudio((float)options.getMusicVolume()/100));
+        musicPlayer.play();
     }
     public Terminal getTerminal() {
         return terminal;
@@ -133,6 +144,10 @@ public class UIManager {
 
     public SimpleTheme getCancelButtonTheme(){
         return new SimpleTheme(TextColor.ANSI.RED, selectedTheme.getBackgroundColor(), SGR.BOLD);
+    }
+
+    public SimpleTheme getDisabledButtonTheme(){
+        return new SimpleTheme(TextColor.ANSI.BLACK_BRIGHT, selectedTheme.getBackgroundColor(), SGR.BOLD);
     }
 
     public void applyThemeColors(TextGraphics textGraphics){
@@ -442,6 +457,7 @@ public class UIManager {
     }
 
     public void showOptions() {
+        final boolean[] menuOpen = {true};
         screen.clear();
         MenuPopupWindow window = new MenuPopupWindow(mainPanel);
         window.setTheme(getWindowTheme());
@@ -484,7 +500,8 @@ public class UIManager {
         if (options.getJsonFont().getFile() != null){
             currentFontLabel.setText(String.format("\"%s\"", options.getJsonFont().getFile()));
         }
-
+        // Store the current font to check later if the font has changed
+        String oldFont = currentFontLabel.getText();
         EmptySpace selectedFontSpace = new EmptySpace(new TerminalSize(25-currentFontLabel.getText().length(), 1));
         Button changeFontButton = new Button("Change", () -> {
             // Show the font selection popup, showing the font popup will automatically update
@@ -520,6 +537,64 @@ public class UIManager {
         container.addComponent(fontSizeOptionsPanel);
         container.addComponent(new Label("Font size must be divisible by 2 and bigger then 10 smaller then 99"));
 
+        // Music options
+        container.addComponent(new EmptySpace(new TerminalSize(1, 1))); // Add some space
+        Panel musicVolumeOptions = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        Label musicVolumeLabel = new Label("Music volume:");
+        TextBox musicVolumeTextBox = new TextBox(String.valueOf(options.getMusicVolume()));
+        // Match numbers from 1 to 100
+        musicVolumeTextBox.setValidationPattern(Pattern.compile("^[0-9][0-9]?$|^100$"));
+        musicVolumeTextBox.setPreferredSize(new TerminalSize(4, 1));
+        // Soundtrack options
+        Label currentSoundtrackLabel = new Label(String.format("\"%s\"", options.getSoundtrackFile().getName()));
+
+        // Store the current soundtrack to check later if the soundtrack has changed
+        EmptySpace selectedSoundtrackSpace = new EmptySpace(new TerminalSize(25-currentSoundtrackLabel.getText().length(), 1));
+        Button changeSoundtrackButton = new Button("Change", () -> {
+            // Show the soundtrack selection popup, showing the soundtrack popup will automatically update
+            // the soundtrack with the one selected by the user
+            String newSoundtrackName = showSoundtrackSelectionPopup();
+            if (newSoundtrackName.length() >= 20){
+                newSoundtrackName = String.format("\"%s...\"", newSoundtrackName.substring(0, 15));
+            }
+            else {
+                newSoundtrackName = String.format("\"%s\"", newSoundtrackName);
+            }
+            currentSoundtrackLabel.setText(newSoundtrackName);
+            selectedSoundtrackSpace.setPreferredSize(new TerminalSize(25-currentSoundtrackLabel.getText().length(), 1));
+        });
+        changeSoundtrackButton.setTheme(getConfirmButtonTheme());
+
+        
+        // Thread to update the music volume in real time
+        new Thread(() -> {
+            while (menuOpen[0]){
+                try{
+                    Utils.waitFor(10);
+                    musicPlayer.setVolumeToPercentage(Utils.boostAudio((float) Integer.parseInt(musicVolumeTextBox.getText()) / 100));
+                }
+                catch (Exception ignore){
+
+                }
+
+            }
+        }).start();
+
+
+        // Add all the music volume options
+        musicVolumeOptions.addComponent(musicVolumeLabel);
+        musicVolumeOptions.addComponent(musicVolumeTextBox);
+        musicVolumeOptions.addComponent(new Label("\u266B"));
+
+        // Add all the soundtrack options
+        Panel soundTrackOptions = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        soundTrackOptions.addComponent(currentSoundtrackLabel);
+        soundTrackOptions.addComponent(selectedSoundtrackSpace); // Add space
+        soundTrackOptions.addComponent(changeSoundtrackButton);
+
+        container.addComponent(musicVolumeOptions);
+        container.addComponent(new Label("Music volume ranges from 0 to 100"));
+        container.addComponent(soundTrackOptions);
         // Exit button
         container.addComponent(new EmptySpace(new TerminalSize(1, 1))); // Add some space
         Label hintLabel = new Label("Use tab to move around");
@@ -533,6 +608,7 @@ public class UIManager {
         window.setComponent(container);
         centerWindow(window);
         gui.addWindowAndWait(window);
+        // After the gui is closed
         // Update options values
         options.setGrayOutNearbyCells(grayNearbyCells.isChecked(0));
         // Get the current font from options
@@ -560,7 +636,12 @@ public class UIManager {
 
         // Set the option font to the new JsonFont object with the updated font
         if (newSize < 10 || newSize > 99 || newSize % 2 != 0) {
-            showContinuePopup("Font size must be divisible by 2 and bigger then 10 smaller then 99.\nNo changes will be made.");
+            String message = "Font size must be divisible by 2 and bigger then 10 smaller then 99.\nNo changes will be made to the font size.";
+            if (!Objects.equals(oldFont, currentFontLabel.getText())){
+                // Display a popup telling the user that to update the font they need to restart the app
+                message += "\nOnly the font style will be changed.\nTo make the changes take effect, please restart the game.";
+            }
+            showContinuePopup(message);
         }
         else{
             if (options.getJsonFont().getFile() != null){
@@ -568,13 +649,15 @@ public class UIManager {
             }
             options.setFont(jsonFont);
 
-            if (newSize != previousFontSize){
+            if (newSize != previousFontSize || !Objects.equals(oldFont, currentFontLabel.getText())){
                 // Display a popup telling the user that to update the font they need to restart the app
                 showContinuePopup("To make the changes take effect, please restart the game.");
             }
         }
 
-
+        menuOpen[0] = false;
+        options.setMusicVolume(Integer.parseInt(musicVolumeTextBox.getText()));
+        musicPlayer.setVolumeToPercentage(Utils.boostAudio((float) Integer.parseInt(musicVolumeTextBox.getText()) / 100));
         screen.clear();
     }
 
@@ -636,6 +719,60 @@ public class UIManager {
 
         }
         return "Courier New";
+    }
+
+    private String showSoundtrackSelectionPopup() {
+        MenuPopupWindow popupWindow = new MenuPopupWindow(mainPanel);
+        popupWindow.setTheme(getWindowTheme());
+        Panel popupContainer = new Panel();
+        popupContainer.addComponent(new Label("Select soundtrack:"));
+        TerminalSize size = new TerminalSize(
+                26,
+                4
+        );
+        RadioBoxList<String> availableFonts = new RadioBoxList<>(size);
+        for (File item : MusicManager.getSoundtracks()){
+            String soundtrackName = item.getName();
+            // Add all the fonts
+            availableFonts.addItem(soundtrackName);
+            // Check the selected one
+            if (soundtrackName.equals(options.getSoundtrackFile().getName())){
+                availableFonts.setCheckedItem(soundtrackName);
+            }
+        }
+
+        popupContainer.addComponent(availableFonts);
+
+        Button okButton = new Button("Ok", popupWindow::close);
+        okButton.setPreferredSize(new TerminalSize(4, 1));
+        okButton.setTheme(getConfirmButtonTheme());
+        popupContainer.addComponent(new EmptySpace(new TerminalSize(1, 1)));
+        Label hintLabel = new Label("Use tab to move around");
+        hintLabel.addStyle(SGR.ITALIC);
+        popupContainer.addComponent(hintLabel);
+        popupContainer.addComponent(okButton);
+        popupWindow.setComponent(popupContainer);
+        centerWindow(popupWindow);
+        gui.addWindowAndWait(popupWindow);
+        // Window got closed
+        try{
+            for (File item : MusicManager.getSoundtracks()){
+                String soundtrackName = item.getName();
+                if (availableFonts.isChecked(soundtrackName)){
+                    options.setSoundtrackFilePath(item.getName());
+
+                    // Restart music
+                    musicPlayer.changeSoundtrack(options.getSoundtrackFile());
+                    musicPlayer.setVolumeToPercentage(Utils.boostAudio((float)options.getMusicVolume()/100));
+                    musicPlayer.play();
+                    return soundtrackName;
+                }
+            }
+        }
+        catch (Exception ignore){
+
+        }
+        return Constants.soundsDir+"sleepy.wav";
     }
 
     /**
@@ -711,7 +848,7 @@ public class UIManager {
      */
     private String getUsername(boolean force) {
         final String[] username = {""};
-        if (!Objects.equals(options.getUsername(), "null") && !force){
+        if (options.isUsernameValid() && !force){
             return options.getUsername();
         }
 
@@ -720,12 +857,12 @@ public class UIManager {
         Panel container = new Panel();
         Panel textPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
         Panel buttonsPanel = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        textPanel.addComponent(new Label("Username: "));
+        textPanel.addComponent(new Label("Username:"));
         TextBox userBox = new TextBox("");
 
         Button enterButton = new Button("Confirm",
                 () -> {
-                    if (userBox.getText().length() <= 10){
+                    if (OptionsInstance.isUsernameValid(userBox.getText())){
                         // If the username is of the correct length, close the window and save the username
                         options.setUsername(userBox.getText());
                         username[0] = userBox.getText();
@@ -733,7 +870,7 @@ public class UIManager {
                     }
                     else{
                         // Show username too long popup
-                        displayPopupWindow(window, "Error, username too long");
+                        showContinuePopup("Error, invalid username.\nThe username must be shorter then 10 characters and longer then 3");
                     }
                 });
         enterButton.setTheme(getConfirmButtonTheme());
@@ -741,7 +878,14 @@ public class UIManager {
             username[0] = null;
             window.close();
         });
-        cancelButton.setTheme(getCancelButtonTheme());
+        // Disable the cancel button if the username is invalid
+        cancelButton.setEnabled(options.isUsernameValid());
+        if (!options.isUsernameValid()){
+            cancelButton.setTheme(getDisabledButtonTheme());
+        }
+        else {
+            cancelButton.setTheme(getCancelButtonTheme());
+        }
         textPanel.addComponent(userBox);
         buttonsPanel.addComponent(enterButton);
         buttonsPanel.addComponent(cancelButton);

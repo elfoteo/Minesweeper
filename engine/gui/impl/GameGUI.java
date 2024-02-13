@@ -26,6 +26,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * GUI implementation for the Minesweeper game.
+ */
 public class GameGUI extends AbstractTerminalGUI {
     private final Terminal terminal;
     private final Panel mainPanel;
@@ -44,6 +47,8 @@ public class GameGUI extends AbstractTerminalGUI {
      * Constructor for the GameGUI.
      *
      * @param uiManager The UIManager giving access to the terminal and screen.
+     * @param difficulty The difficulty level of the Minesweeper game.
+     * @param username The username of the player.
      */
     public GameGUI(UIManager uiManager, MinesweeperDifficulty difficulty, String username) {
         super(uiManager.getTerminal());

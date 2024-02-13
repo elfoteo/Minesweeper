@@ -8,18 +8,13 @@ import java.io.Serializable;
 public class ASCIISkin implements ISkin, Serializable {
     @Override
     public char getChar(Cell cell) {
-        switch (cell.type) {
-            case NOT_SET:
-                return '.';
-            case NUMBER:
-                return cell.getNumberAsChar();
-            case MINE:
-                return '#';
-            case HIDDEN:
-                return '@';
-            default:
-                return ' ';
-        }
+        return switch (cell.type) {
+            case NOT_SET -> '.';
+            case NUMBER -> cell.getNumberAsChar();
+            case MINE -> '#';
+            case HIDDEN -> '@';
+            default -> ' ';
+        };
     }
 
     @Override

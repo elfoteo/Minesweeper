@@ -6,6 +6,9 @@ import com.googlecode.lanterna.graphics.StyleSet;
 
 import java.util.EnumSet;
 
+/**
+ * Class containing all the constants used all arround the game.
+ */
 public class Constants {
     public static final TextColor cellHighlightColor = new TextColor.RGB(235, 128, 52);
     public static final TextColor dangerColor = new TextColor.RGB(200, 10, 13);
@@ -72,4 +75,5 @@ If you uncover a mine you can respawn up to 3 times if you have enough score""";
     public static final String themeFile = appDataDir+"theme.dat";
     public static final String localLeaderboardFile = appDataDir+"local_leaderboard.json";
     public static final String fontsDir = appDataDir+"fonts/";
+    public static final String soundsDir = appDataDir+"sounds/";
 }

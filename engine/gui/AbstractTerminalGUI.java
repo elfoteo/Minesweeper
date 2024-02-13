@@ -10,7 +10,11 @@ import engine.utils.Utils;
 
 import java.io.IOException;
 
+/**
+ * An abstract implementation of the ITerminalGUI interface providing common functionality.
+ */
 public class AbstractTerminalGUI implements ITerminalGUI {
+
     protected Screen screen;
     protected TextGraphics textGraphics;
     protected UIManager uiManager;
@@ -40,36 +44,36 @@ public class AbstractTerminalGUI implements ITerminalGUI {
             // Register the onResize event
             subscribe();
         } catch (Exception ignored) {
-
+            // Handle exception
         }
     }
 
+    /**
+     * Resize method called in a separate thread to handle terminal resizing.
+     */
     private void resize() {
         new Thread(() -> {
-            try{
+            try {
                 if (!resizePaused) {
                     // Clear the screen
                     screen.clear();
                     // Resize screen
                     screen.doResizeIfNecessary();
 
-                    try{
+                    try {
                         onResize();
-
-                    }
-                    catch (Exception ignore){
-
+                    } catch (Exception ignore) {
+                        // Handle exception
                     }
 
                     try {
                         // Redraw everything
                         draw();
                     } catch (Exception ignore) {
-
+                        // Handle exception
                     }
                 }
-            }
-            catch (Exception ex){
+            } catch (Exception ex) {
                 Utils.Debug(Utils.exceptionToString(ex));
             }
         }).start();
@@ -83,6 +87,14 @@ public class AbstractTerminalGUI implements ITerminalGUI {
     @Override
     public void draw() throws IOException {
         // Fill the background with the theme background color
+        fillBackground();
+    }
+
+    /**
+     * Fills the background with the theme background color.
+     */
+    protected void fillBackground() {
+        // Set's the background color to the theme background and fills it
         textGraphics.setBackgroundColor(uiManager.getThemeBackgroundColor());
         textGraphics.fill(' ');
     }
@@ -120,7 +132,7 @@ public class AbstractTerminalGUI implements ITerminalGUI {
 
     @Override
     public void show() throws IOException {
-
+        // Implementation specific to each concrete class
     }
 
     /**

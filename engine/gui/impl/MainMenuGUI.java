@@ -16,7 +16,11 @@ import engine.utils.Utils;
 
 import java.io.IOException;
 
+/**
+ * Represents the main menu GUI.
+ */
 public class MainMenuGUI extends AbstractTerminalGUI {
+
     private final Terminal terminal;
     private int selectedIndex = 0;
 
@@ -25,56 +29,58 @@ public class MainMenuGUI extends AbstractTerminalGUI {
      *
      * @param uiManager The UIManager giving access to the terminal and screen.
      */
-    public MainMenuGUI(UIManager uiManager){
+    public MainMenuGUI(UIManager uiManager) {
         super(uiManager.getTerminal());
         this.uiManager = uiManager;
         this.terminal = uiManager.getTerminal();
         this.screen = uiManager.getScreen();
         this.textGraphics = uiManager.getTextGraphics();
     }
+
     @Override
     public void show() throws IOException {
         // Call super method to register all the necessary stuff
         super.show();
         // If the data collection isn't accepted yet
-        if (uiManager.isDataCollectionRejected()){
+        if (uiManager.isDataCollectionRejected()) {
             // If the user denies the data collection exit
-            if (!uiManager.showDataCollectionWarning()){
+            if (!uiManager.showDataCollectionWarning()) {
                 return;
             }
         }
-        try{
+        try {
             SkinManager.loadSelectedSkinFromFile(Constants.skinFile);
-        } catch (Exception ignore){}
-        try{
+        } catch (Exception ignore) {
+        }
+        try {
             ThemeManager.loadSelectedThemeFromFile(Constants.themeFile);
-        } catch (Exception ignore){}
+        } catch (Exception ignore) {
+        }
         boolean running = true;
 
-        while (running){
+        while (running) {
             draw();
 
             KeyStroke choice = screen.readInput();
-            if (choice.getKeyType() == KeyType.EOF){
+            if (choice.getKeyType() == KeyType.EOF) {
                 break;
             }
 
-            if (choice.getKeyType() == KeyType.ArrowDown){
+            if (choice.getKeyType() == KeyType.ArrowDown) {
                 selectedIndex++;
-                if (selectedIndex > Constants.mainMenuOptions.length-1){
+                if (selectedIndex > Constants.mainMenuOptions.length - 1) {
                     selectedIndex = 0;
                 }
-            }
-            else if (choice.getKeyType() == KeyType.ArrowUp){
+            } else if (choice.getKeyType() == KeyType.ArrowUp) {
                 selectedIndex--;
-                if (selectedIndex < 0){
-                    selectedIndex = Constants.mainMenuOptions.length-1;
+                if (selectedIndex < 0) {
+                    selectedIndex = Constants.mainMenuOptions.length - 1;
                 }
             } else if (choice.getKeyType() == KeyType.Enter) {
-                switch (Constants.mainMenuOptions[selectedIndex]){
+                switch (Constants.mainMenuOptions[selectedIndex]) {
                     case "Play":
                         String username = uiManager.getUsername();
-                        if (username == null){
+                        if (username == null) {
                             break;
                         }
                         MinesweeperDifficulty difficulty;
@@ -82,7 +88,7 @@ public class MainMenuGUI extends AbstractTerminalGUI {
                         do {
                             difficulty = uiManager.getDifficulty();
                             // The difficulty will only be null if the user decides to cancel
-                            if (difficulty == null){
+                            if (difficulty == null) {
                                 break;
                             }
                             GameGUI game = new GameGUI(uiManager, difficulty, username);
@@ -123,15 +129,15 @@ public class MainMenuGUI extends AbstractTerminalGUI {
         super.draw();
         // screen.doResizeIfNecessary() returns size if the screen has been resized, null if not
         // if the screen has been resized clear the screen
-        if (screen.doResizeIfNecessary() != null){
+        if (screen.doResizeIfNecessary() != null) {
             screen.clear();
         }
         uiManager.applyThemeColors(textGraphics);
         // Add logo
         int x = Utils.getMaxStringLength(Constants.minesweeperLogo);
         int y = 1;
-        for (String logoLine : Constants.minesweeperLogo){
-            textGraphics.putString(getTerminalWidth()/2-x/2, y, logoLine);
+        for (String logoLine : Constants.minesweeperLogo) {
+            textGraphics.putString(getTerminalWidth() / 2 - x / 2, y, logoLine);
             y++;
         }
         // Add creator text
@@ -164,15 +170,14 @@ public class MainMenuGUI extends AbstractTerminalGUI {
         screen.refresh();
         uiManager.applyThemeColors(textGraphics);
 
-        x = Utils.getMaxStringLength(Constants.mainMenuOptions)+2;
-        y = Constants.minesweeperLogo.length+2;
+        x = Utils.getMaxStringLength(Constants.mainMenuOptions) + 2;
+        y = Constants.minesweeperLogo.length + 2;
         int counter = 0;
-        for (String menuLine : Constants.mainMenuOptions){
-            if (selectedIndex == counter){
-                textGraphics.putString(getTerminalWidth()/2-x/2, y, "o "+menuLine);
-            }
-            else{
-                textGraphics.putString(getTerminalWidth()/2-x/2, y, "- "+menuLine);
+        for (String menuLine : Constants.mainMenuOptions) {
+            if (selectedIndex == counter) {
+                textGraphics.putString(getTerminalWidth() / 2 - x / 2, y, "o " + menuLine);
+            } else {
+                textGraphics.putString(getTerminalWidth() / 2 - x / 2, y, "- " + menuLine);
             }
             y++;
             counter++;

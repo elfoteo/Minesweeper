@@ -16,12 +16,37 @@ import java.util.stream.Collectors;
 
 public class Utils {
     /**
-     * Returns the maximum string length of the array.
+     * Applies a logarithmic boost to values in the range of 0 to 1.
+     * This function boosts low values more than higher values within the range of 0 to 1.
+     * It maps values less than or equal to 0 to 0 and values greater than or equal to 1 to 1.
+     * For values in between 0 and 1, a logarithmic transformation is applied to boost low values more than higher values.
      *
-     * <p>If the input array is or empty, returns 0.</p>
+     * @param value the value to be boosted, must be in the range of 0 to 1.
+     * @return the boosted value, transformed using a logarithmic function.
+     */
+    public static float boost(float value, float power) {
+        if (value <= 0) {
+            return 0;
+        } else if (value >= 1) {
+            return 1;
+        } else {
+            // Logarithmic boost function: y = 1 - (1 - x)^2
+            return 1 - (float) Math.pow(1 - value, power);
+        }
+    }
+
+    public static float boostAudio(float volume){
+        // 3f^1.23f boost works fine
+        return boost(volume, 5f);
+    }
+
+
+    /**
+     * Returns the maximum string length of the array.
+     * If the input array is or empty, returns 0.
      *
      * @param array An array of strings.
-     * @return The maximum length among the strings in the array, or 0 if the array is {@code null} or empty.
+     * @return The maximum length among the strings in the array, or 0 if the array is null or empty.
      */
     public static int getMaxStringLength(String[] array) {
         if (array == null || array.length == 0) {

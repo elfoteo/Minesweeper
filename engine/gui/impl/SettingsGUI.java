@@ -14,7 +14,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Represents a GUI for displaying and handling settings.
+ */
 public class SettingsGUI extends AbstractTerminalGUI {
+
     private int selectedIndex = 0;
 
     /**
@@ -56,12 +60,12 @@ public class SettingsGUI extends AbstractTerminalGUI {
                 break;
             } else if (choice.getKeyType() == KeyType.Enter) {
                 switch (Constants.settingsMenuOptions[selectedIndex]) {
-                    case "Skins":
+                    case "Skins" -> {
                         resizePaused = true;
                         uiManager.showSkinsMenu();
                         resizePaused = false;
-                        break;
-                    case "Themes":
+                    }
+                    case "Themes" -> {
                         resizePaused = true;
                         ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
                         // Schedule a timer task to update the theme every 100 milliseconds
@@ -79,16 +83,14 @@ public class SettingsGUI extends AbstractTerminalGUI {
                         timerTask.cancel(true);
                         timer.shutdown();
                         resizePaused = false;
-                        break;
-                    case "Options":
+                    }
+                    case "Options" -> {
                         // TODO: Music options
                         resizePaused = true;
                         uiManager.showOptions();
                         resizePaused = false;
-                        break;
-                    case "Back":
-                        running = false;
-                        break;
+                    }
+                    case "Back" -> running = false;
                 }
             }
         }
