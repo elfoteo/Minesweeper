@@ -107,8 +107,6 @@ public class GameGUI extends AbstractTerminalGUI {
         // Start timer
         startTime = System.currentTimeMillis();
         timer = Executors.newSingleThreadScheduledExecutor();
-        // Schedule timer update every 500 milliseconds (half second)
-        //timerTask = timer.scheduleAtFixedRate(this::updateTimer, 0, 500, TimeUnit.MILLISECONDS);
         
         inputHandler.startThread();
         while (gameInstance.isRunning()) {
