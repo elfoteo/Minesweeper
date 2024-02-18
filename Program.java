@@ -49,7 +49,12 @@ public class Program {
 			// Register the themes
 			ThemeManager.registerThemes();
 			// Register music
-			MusicManager.register();
+			boolean success = MusicManager.register();
+			if (!success){
+				terminal.exitPrivateMode();
+				terminal.close();
+				return;
+			}
 
             UIManager uiManager = new UIManager(terminal);
 			uiManager.showMainScreen();

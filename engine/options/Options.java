@@ -48,10 +48,10 @@ public class Options {
     private static OptionsInstance getDefaultOptions(){
         return new OptionsInstance(
                 "-",
-                25,
+                0,
                 true,
                 new JsonFont(FontManager.getDefaultFont()),
-                "sleepy.wav"
+                "Original.wav"
         );
     }
 

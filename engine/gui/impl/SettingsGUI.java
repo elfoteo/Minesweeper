@@ -5,6 +5,7 @@ import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import engine.UIManager;
 import engine.gui.AbstractTerminalGUI;
+import engine.gui.ITerminalGUI;
 import engine.utils.Constants;
 import engine.utils.Utils;
 
@@ -17,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Represents a GUI for displaying and handling settings.
  */
-public class SettingsGUI extends AbstractTerminalGUI {
+public class SettingsGUI extends AbstractTerminalGUI implements ITerminalGUI {
 
     private int selectedIndex = 0;
 

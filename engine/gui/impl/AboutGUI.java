@@ -7,6 +7,7 @@ import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import engine.UIManager;
 import engine.gui.AbstractTerminalGUI;
+import engine.gui.ITerminalGUI;
 import engine.utils.Constants;
 import engine.utils.Utils;
 
@@ -15,7 +16,7 @@ import java.io.IOException;
 /**
  * GUI implementation for an "About" screen.
  */
-public class AboutGUI extends AbstractTerminalGUI {
+public class AboutGUI extends AbstractTerminalGUI implements ITerminalGUI {
     private final long startTime = System.currentTimeMillis();
     private final boolean[] rgbEnabled = new boolean[]{true};
     private static final String GUI_TITLE = "About";

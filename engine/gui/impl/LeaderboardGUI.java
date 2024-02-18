@@ -7,6 +7,7 @@ import com.googlecode.lanterna.input.KeyType;
 import engine.Leaderboard;
 import engine.UIManager;
 import engine.gui.AbstractTerminalGUI;
+import engine.gui.ITerminalGUI;
 import engine.utils.Constants;
 import engine.utils.Utils;
 
@@ -16,7 +17,7 @@ import java.util.List;
 /**
  * Represents the leaderboard GUI.
  */
-public class LeaderboardGUI extends AbstractTerminalGUI {
+public class LeaderboardGUI extends AbstractTerminalGUI implements ITerminalGUI {
 
     private final Leaderboard leaderboard;
     // uiShowingLocal, false if showing global leaderboard, true if showing local leaderboard

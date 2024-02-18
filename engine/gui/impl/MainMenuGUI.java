@@ -5,6 +5,7 @@ import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.terminal.Terminal;
 import engine.UIManager;
 import engine.gui.AbstractTerminalGUI;
+import engine.gui.ITerminalGUI;
 import engine.options.Options;
 import engine.skins.SkinManager;
 import engine.themes.ThemeManager;
@@ -17,7 +18,7 @@ import java.io.IOException;
 /**
  * Represents the main menu GUI.
  */
-public class MainMenuGUI extends AbstractTerminalGUI {
+public class MainMenuGUI extends AbstractTerminalGUI implements ITerminalGUI {
 
     private final Terminal terminal;
     private int selectedIndex = 0;

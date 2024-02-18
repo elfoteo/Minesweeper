@@ -15,6 +15,7 @@ import engine.Leaderboard;
 import engine.Minesweeper;
 import engine.UIManager;
 import engine.gui.AbstractTerminalGUI;
+import engine.gui.ITerminalGUI;
 import engine.themes.IGameTheme;
 import engine.utils.*;
 
@@ -29,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * GUI implementation for the Minesweeper game.
  */
-public class GameGUI extends AbstractTerminalGUI {
+public class GameGUI extends AbstractTerminalGUI implements ITerminalGUI {
     private final Terminal terminal;
     private final Panel mainPanel;
     private final MultiWindowTextGUI gui;
